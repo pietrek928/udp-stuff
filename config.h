@@ -2,6 +2,7 @@
 #define __CONFIG_H_
 
 #include <string>
+#include <arpa/inet.h>
 
 class ParseError : public std::exception {
     std::string descr;
@@ -10,16 +11,47 @@ public:
     ParseError(const char *msg, size_t ln)
         : descr(std::to_string(ln) + ": " + msg) {}
 
+    ParseError(const std::string descr)
+        : descr(descr) {
+    }
+
     const char * what () const throw () {
         return descr.c_str();
     }
 };
 
+auto str2ipv4(const char *str) {
+    uint32_t r;
+    if (inet_pton(AF_INET, str, &r) != 1) {
+        throw ParseError(std::string("Converting string '") + str + "' to ipv4 failed");
+    }
+    return r;
+}
+
+template<class Tout>
+auto cvt_val(const char *str) {
+    Tout r;
+    std::istringstream(str) >> r;
+    return r;
+}
+
+template<>
+auto cvt_val<int>(const char *str) {
+    return atoi(str);
+}
+
+template<>
+auto cvt_val<uint32_t>(const char *str) {
+    if (!strncmp(str, "0x", 2)) return (uint32_t)strtoul(str+2, NULL, 16);
+    if (!strncmp(str, "ipv4:", 5)) return (uint32_t)str2ipv4(str+5);
+    return (uint32_t)strtoul(str, NULL, 10);
+}
+
 class ImmutableConfig {
     class ParseConfig {
         std::vector<uint8_t> &out_data;
 
-        vector<size_t> pos_stack;
+        std::vector<size_t> pos_stack;
         int nstr = 0;
         int line_num = 0;
         enum {
@@ -177,66 +209,75 @@ class ImmutableConfig {
  
     std::vector<uint8_t> v;
 
-    /*template<class Tl>
-    void _get(const Tl &names, size_t pos) {
-        pos_e = get_len(pos);
-        while (pos < pos_e) {
-            //
-        }
-    }*/
-
-    auto read_len(size_t &pos) {
+    auto read_len(size_t &pos) const {
         auto r = *(uint32_t*)&v[pos];
         pos += sizeof(r);
         return r;
     }
 
     template<class Tp>
-    auto find(Tp be, const char *str) {
+    auto find(Tp be, const char *str) const {
         size_t pos = std::get<0>(be);
         size_t pos_e = std::get<1>(be);
         while (pos < pos_e) {
             auto new_pos = pos;
             new_pos += read_len(pos);
             if (!strcmp((char*)&v[pos], str)) {
-                return make_tuple(pos + strlen(str) + 1, new_pos);
+                return std::make_tuple(pos + strlen(str) + 1, new_pos);
             }
             pos = new_pos;
         }
-        return make_tuple(pos_e, pos_e);
+        return std::make_tuple(pos_e, pos_e);
     }
 
     template<class Tout>
-    auto cvt_val(const char *str) {
-        Tout r;
-        std::istringstream(str) >> r;
-        return r;
-    }
-
-public:
-
-    template<class Tout>
-    auto get(const char *name) {
-        auto fnd = find(make_tuple(0, v.size()), name);
+    inline auto _get(const char *name, size_t fb, size_t fe) const {
+        auto fnd = find(std::make_tuple(fb, fe), name);
         auto b = std::get<0>(fnd);
         auto e = std::get<1>(fnd);
         if (b == e || !v[b]) { // not found
             throw std::out_of_range("Value not found");
         }
         return cvt_val<Tout>((const char *)&v[b]);
-
     }
 
     template<class Tout>
-    auto get(const char *name, Tout default_) {
-        auto fnd = find(make_tuple(0, v.size()), name);
+    auto _get(const char *name, Tout default_, size_t fb, size_t fe) const {
+        auto fnd = find(std::make_tuple(fb, fe), name);
         auto b = std::get<0>(fnd);
         auto e = std::get<1>(fnd);
         if (b == e || !v[b]) { // not found
             return default_;
         }
         return cvt_val<Tout>((const char *)&v[b]);
+    }
 
+    class SubConfig {
+        ImmutableConfig *config;
+        size_t b, e;
+
+        public:
+
+        SubConfig(ImmutableConfig *config, size_t b, size_t e)
+            : config(config), b(b), e(e) {}
+
+        template<class Tout, class ... Targs>
+        auto get(Targs ... args) const {
+            return config->_get<Tout>(args..., b, e);
+        }
+    };
+
+
+public:
+
+    template<class Tout>
+    auto get(const char *name) const {
+        return _get<Tout>(name, 0, v.size());
+    }
+
+    template<class Tout>
+    auto get(const char *name, Tout default_) const {
+        return _get<Tout>(name, default_, 0, v.size());
     }
 
     void parse(const char *str) {
@@ -248,32 +289,36 @@ public:
         parse(str);
     }
 
-    void dump() {
+    void dump() const {
         size_t pos = 0;
         auto vsize = v.size();
-        vector<size_t> pos_stack = {v.size()};
+        std::vector<size_t> pos_stack = {v.size()};
 
         while (pos_stack.size()) {
             if (pos < pos_stack.back()) {
                 auto end_pos = pos;
                 end_pos += read_len(pos);
-                pos_stack.push_back(min(end_pos, vsize));
+                pos_stack.push_back(std::min(end_pos, vsize));
             } else {
                 pos_stack.pop_back();
                 continue;
             }
             auto pos2 = pos + strlen((char*)& v[pos]) + 1;
             if (pos2 < pos_stack.back()) {
-                cout << std::string(pos_stack.size(), ' ') << &v[pos] << ": " << &v[pos2] << endl;
+                std::cout << std::string(pos_stack.size(), ' ') << &v[pos] << ": " << &v[pos2] << std::endl;
                 pos = pos2 + strlen((char*)& v[pos2]) + 1;
             } else {
-                cout << std::string(pos_stack.size(), ' ') << &v[pos] << endl;
+                std::cout << std::string(pos_stack.size(), ' ') << &v[pos] << std::endl;
                 pos = pos2;
             }
         }
     }
 
 };
+
+typedef ImmutableConfig Config;
+
+#define CONFIGURE(vname) {vname = config->get<decltype(vname)>(#vname);}
 
 #endif /* __CONFIG_H_ */
 

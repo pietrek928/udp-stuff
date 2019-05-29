@@ -16,6 +16,7 @@
 
 #include "err.h"
 #include "buffer.h"
+#include "config.h"
 
 using namespace std;
 
@@ -111,6 +112,13 @@ public:
         uint32_t dst_ip;
         uint16_t src_port;
         uint16_t dst_port;
+
+        void load(const Config *config) {
+            CONFIGURE(src_ip)
+            CONFIGURE(dst_ip)
+            CONFIGURE(src_port)
+            CONFIGURE(dst_port)
+        }
 
         size_t hash() const {
             return
@@ -303,7 +311,6 @@ void print_hex(unsigned char *buf, int n) {
 }
 
 //#define AA(a, args...) #a, AA(args)
-#include "config.h"
 
 template<class T>
 T func() {
@@ -312,14 +319,19 @@ T func() {
 
 int main() {
     //int a = (int)func<>();
-    ImmutableConfig c("a 111;b{w;};o o o");
+    ImmutableConfig c("src_ip ipv4:127.0.0.1; dst_ip ipv4:127.0.0.1; src_port 12; dst_port 15");
+    for (int i=0; i<10000000; i++) {
+        Udp4Driver::Addr a;
+        a.load(&c);
+    }
+    /*ImmutableConfig c("r;r;r;r;r;r;r;r;;r;r;r;;;;rr;rr;r;;r;r;a 111;");
     int b = 0;
     for (int i=0; i<10000000; i++) {
         b += c.get<int>("a");
     }
     cout << b << endl;
     //c.parse("a a; a a; a a; a a");
-    c.dump();
+    c.dump();*/
     //cout << AA(1, 2) << endl;
 
     //std::string text = "Let me split this into words";

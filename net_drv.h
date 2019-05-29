@@ -8,6 +8,7 @@ public:
     class NetAddr {
         public:
         virtual size_t hash() const {return 0;}
+        virtual void load(Config *config) {}
     };
 
     virtual void detach(const NetAddr &addr) {}
