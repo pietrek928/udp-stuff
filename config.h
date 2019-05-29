@@ -2,7 +2,10 @@
 #define __CONFIG_H_
 
 #include <string>
+#include <iomanip>
+
 #include <arpa/inet.h>
+#include <fcntl.h>
 
 class ParseError : public std::exception {
     std::string descr;

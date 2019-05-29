@@ -1,6 +1,16 @@
 #ifndef __NET_DRV_H_
 #define __NET_DRV_H_
 
+
+namespace std {
+    template <class T>
+    struct hash<const T> {
+        size_t operator()(const T &v) const {
+            return v.hash();
+        }
+    };
+}
+
 class Connection;
 
 class NetDriver {
