@@ -305,10 +305,20 @@ void print_hex(unsigned char *buf, int n) {
 //#define AA(a, args...) #a, AA(args)
 #include "config.h"
 
+template<class T>
+T func() {
+    return 0;
+}
+
 int main() {
-    ImmutableConfig c;
-    c.parse("a a;b{w;};o o o");
-    //c.parse("a");
+    //int a = (int)func<>();
+    ImmutableConfig c("a 111;b{w;};o o o");
+    int b = 0;
+    for (int i=0; i<10000000; i++) {
+        b += c.get<int>("a");
+    }
+    cout << b << endl;
+    //c.parse("a a; a a; a a; a a");
     c.dump();
     //cout << AA(1, 2) << endl;
 

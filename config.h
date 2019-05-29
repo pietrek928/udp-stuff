@@ -87,11 +87,12 @@ class ImmutableConfig {
         public:
         ParseConfig(const char *data, std::vector<uint8_t> &out_data) 
             : data(data), out_data(out_data) {
+            nstr = 0;
+            line_num = 0;
             pos_stack.push_back(-1);
 
             char c;
             while (c = *(data++)) {
-                cout << c << " " << pos_stack.size() << endl;
                 if (c == '\n' && state != INSIDE) {
                     line_num ++;
                 }
@@ -108,6 +109,9 @@ class ImmutableConfig {
                                 break;
                             case '}':
                                 end_opt();
+                                if (pos_stack.size() <= 1) {
+                                    throw_error("unmatching '}'");
+                                }
                                 pos_stack.pop_back();
                                 nstr = 2;
                                 end_opt();
@@ -137,6 +141,7 @@ class ImmutableConfig {
                             case '}':
                             case ';':
                             case '\n':
+                            case '"':
                                 data--;
                             case '\t':
                             case ' ':
@@ -186,24 +191,73 @@ class ImmutableConfig {
         return r;
     }
 
-    public:
+    template<class Tp>
+    auto find(Tp be, const char *str) {
+        size_t pos = std::get<0>(be);
+        size_t pos_e = std::get<1>(be);
+        while (pos < pos_e) {
+            auto new_pos = pos;
+            new_pos += read_len(pos);
+            if (!strcmp((char*)&v[pos], str)) {
+                return make_tuple(pos + strlen(str) + 1, new_pos);
+            }
+            pos = new_pos;
+        }
+        return make_tuple(pos_e, pos_e);
+    }
+
+    template<class Tout>
+    auto cvt_val(const char *str) {
+        Tout r;
+        std::istringstream(str) >> r;
+        return r;
+    }
+
+public:
+
+    template<class Tout>
+    auto get(const char *name) {
+        auto fnd = find(make_tuple(0, v.size()), name);
+        auto b = std::get<0>(fnd);
+        auto e = std::get<1>(fnd);
+        if (b == e || !v[b]) { // not found
+            throw std::out_of_range("Value not found");
+        }
+        return cvt_val<Tout>((const char *)&v[b]);
+
+    }
+
+    template<class Tout>
+    auto get(const char *name, Tout default_) {
+        auto fnd = find(make_tuple(0, v.size()), name);
+        auto b = std::get<0>(fnd);
+        auto e = std::get<1>(fnd);
+        if (b == e || !v[b]) { // not found
+            return default_;
+        }
+        return cvt_val<Tout>((const char *)&v[b]);
+
+    }
 
     void parse(const char *str) {
         v.clear();
         ParseConfig(str, v);
     }
 
+    ImmutableConfig(const char *str) {
+        parse(str);
+    }
+
     void dump() {
         size_t pos = 0;
+        auto vsize = v.size();
         vector<size_t> pos_stack = {v.size()};
-        cout << v.size() << endl;
 
         while (pos_stack.size()) {
             if (pos < pos_stack.back()) {
-                auto max_len = v.size() - pos;
                 auto end_pos = pos;
                 end_pos += read_len(pos);
-                pos_stack.push_back(min(end_pos, max_len));
+                pos_stack.push_back(min(end_pos, vsize));
             } else {
                 pos_stack.pop_back();
                 continue;
@@ -219,7 +273,6 @@ class ImmutableConfig {
         }
     }
 
-public:
 };
 
 #endif /* __CONFIG_H_ */
