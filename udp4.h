@@ -63,7 +63,7 @@ class SendPacketQueue { // TODO: locks
     }
 };
 
-class Udp4Driver : NetDriver { 
+class Udp4Driver : public NetDriver {
 
 public:
     class Addr : public NetAddr {

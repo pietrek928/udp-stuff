@@ -25,11 +25,32 @@ T func() {
 
 int main() {
     //int a = (int)func<>();
-    ImmutableConfig c("src_ip ipv4:127.0.0.1; dst_ip ipv4:127.0.0.1; src_port 12; dst_port 15");
-    for (int i=0; i<10000000; i++) {
-        Udp4Driver::Addr a;
-        a.load(&c);
+    Config c1("src_ip ipv4:127.0.0.1; dst_ip ipv4:127.0.0.1; src_port 12; dst_port 15");
+    Config c2("src_ip ipv4:127.0.0.1; dst_ip ipv4:127.0.0.1; src_port 15; dst_port 12");
+    //for (int i=0; i<10000000; i++) {
+        //Udp4Driver::Addr a;
+        //a.load(&c);
+    //}
+    Udp4Driver::Addr a1, a2;
+    a1.load(&c1);
+    a2.load(&c2);
+
+    Connection conn1, conn2;
+    Udp4Driver drv;
+
+    conn1.connect(&drv, &a1);
+    conn2.connect(&drv, &a2);
+
+    drv.init_socket();
+    drv.resize_buffers(8);
+
+    drv.push_data(a1, 1, (uint8_t*)"aaaa", 4);
+    drv.send_all();
+
+    while (1) {
+        drv.recv_all();
     }
+
     /*ImmutableConfig c("r;r;r;r;r;r;r;r;;r;r;r;;;;rr;rr;r;;r;r;a 111;");
     int b = 0;
     for (int i=0; i<10000000; i++) {
