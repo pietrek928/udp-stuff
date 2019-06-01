@@ -17,16 +17,14 @@ class StructBuffer : public ChainedBuffer {
     ChainedBuffer *parent;
 public:
 
-    Tstruct struct_;
+    Tstruct struct_ = {};
 
     StructBuffer(ChainedBuffer &parent)
         : parent(&parent) {}
 
     void vector_insert(std::vector<uint8_t> &v) {
-        if (parent) {
-            parent->vector_insert(v);
-        }
         v.insert(v.end(), (uint8_t*)&struct_, ((uint8_t*)&struct_) + sizeof(struct_));
+        parent->vector_insert(v);
     }
 };
 
@@ -54,8 +52,8 @@ public:
         : parent(&parent), vv(vargs...) {}
 
     void vector_insert(std::vector<uint8_t> &v) {
-        parent->vector_insert(v);
         v.insert(v.end(), vv.begin(), vv.end());
+        parent->vector_insert(v);
     }
 };
 
@@ -70,7 +68,21 @@ public:
         : parent(&parent), buf(buf), buf_size(buf_size) {}
 
     void vector_insert(std::vector<uint8_t> &v) {
+        v.insert(v.end(), buf, buf+buf_size);
         parent->vector_insert(v);
+    }
+};
+
+class ArrayInitBuffer : public ChainedBuffer {
+public:
+
+    uint8_t *buf;
+    size_t buf_size;
+
+    ArrayInitBuffer(uint8_t *buf, size_t buf_size)
+        : buf(buf), buf_size(buf_size) {}
+
+    void vector_insert(std::vector<uint8_t> &v) {
         v.insert(v.end(), buf, buf+buf_size);
     }
 };

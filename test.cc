@@ -1,5 +1,16 @@
 #include <iostream>
+#include <iomanip>
 #include <vector>
+
+void print_hex(unsigned char *buf, int n) {
+    for (int i=1; i<=n; i++) {
+        std::cout << std::setfill('0') << std::setw(2) << std::hex << (unsigned int)buf[i-1] << " ";
+        if (!(i % 16)) std::cout << std::endl;
+    }
+    std::cout << std::endl << std::endl << std::dec;
+}
+
+
 
 #include "err.h"
 #include "buffer.h"
@@ -10,14 +21,6 @@ using namespace std;
 
 //#define AA(a, args...) #a, AA(args)
 
-void print_hex(unsigned char *buf, int n) {
-    for (int i=1; i<=n; i++) {
-        cout << setfill('0') << setw(2) << hex << (unsigned int)buf[i-1] << " ";
-        if (!(i % 16)) cout << endl;
-    }
-    cout << endl << endl << dec;
-}
-
 template<class T>
 T func() {
     return 0;
@@ -25,8 +28,10 @@ T func() {
 
 int main() {
     //int a = (int)func<>();
-    Config c1("src_ip ipv4:127.0.0.1; dst_ip ipv4:127.0.0.1; src_port 12; dst_port 15");
-    Config c2("src_ip ipv4:127.0.0.1; dst_ip ipv4:127.0.0.1; src_port 15; dst_port 12");
+    //Config c1("src_ip ipv4:127.0.0.1; dst_ip ipv4:127.0.0.1; src_port 12; dst_port 15");
+    //Config c2("src_ip ipv4:127.0.0.1; dst_ip ipv4:127.0.0.1; src_port 15; dst_port 12");
+    Config c1("src_ip ipv4:192.168.1.104; dst_ip ipv4:192.168.1.104; src_port 12; dst_port 15");
+    Config c2("src_ip ipv4:192.168.1.104; dst_ip ipv4:192.168.1.104; src_port 15; dst_port 12");
     //for (int i=0; i<10000000; i++) {
         //Udp4Driver::Addr a;
         //a.load(&c);
@@ -44,8 +49,10 @@ int main() {
     drv.init_socket();
     drv.resize_buffers(8);
 
-    drv.push_data(a1, 1, (uint8_t*)"aaaa", 4);
+    drv.push_control(a1, 1, (uint8_t*)"aaaa", 4);
     drv.send_all();
+
+    cout << "ready." << endl;
 
     while (1) {
         drv.recv_all();
