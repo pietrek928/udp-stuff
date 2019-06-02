@@ -20,6 +20,10 @@ void Connection::process_data(packet_id_t id, uint8_t *data, size_t len) {
     cout << "Data: len: " << len << " id: " << id << endl;
 }
 
+void Connection::parse_cmds() {
+    //
+}
+
 Connection::~Connection() {
     disconnect();
 }

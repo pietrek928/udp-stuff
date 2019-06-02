@@ -34,5 +34,16 @@ void _scall(const char *descr, const char *cmd, bool success) {
 
 #define scall(descr, cmd) _scall(descr, __AT__ " " #cmd, cmd)
 
+class IdentityError : public std::exception {
+    std::string descr;
+
+public:
+    IdentityError(std::string descr) : descr(descr) {}
+
+    const char *what() const throw () {
+        return descr.c_str();
+    }
+}
+
 #endif /* __ERR_H_ */
 
