@@ -114,7 +114,7 @@ public:
         uint16_t src_port;
         uint16_t dst_port;
 
-        void load(const Config *config) {
+        void load(const Config *cfg) {
             CONFIGURE(src_ip)
             CONFIGURE(dst_ip)
             CONFIGURE(src_port)

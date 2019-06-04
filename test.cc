@@ -16,6 +16,7 @@ void print_hex(unsigned char *buf, int n) {
 #include "buffer.h"
 #include "config.h"
 #include "udp4.h"
+#include "sgn.h"
 
 using namespace std;
 

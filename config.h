@@ -321,7 +321,7 @@ public:
 
 typedef ImmutableConfig Config;
 
-#define CONFIGURE(vname) {vname = config->get<decltype(vname)>(#vname);}
+#define CONFIGURE(vname) {vname = cfg->get<decltype(vname)>(#vname);}
 
 #endif /* __CONFIG_H_ */
 
