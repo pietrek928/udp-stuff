@@ -29,25 +29,31 @@ public:
 };
 
 class ECDSAIdentity : public Identity {
-    std::unique_ptr<EC_KEY, decltype(&::EC_KEY_free)> key;
-
     public:
 
+    EC_KEY *key = NULL;
+
     void verify(const byte *sgn, const byte *dgst, size_t len) {
-        if (ECDSA_verify(0, dgst, len, sgn, len, key.get())) {
+        if (ECDSA_verify(0, dgst, len, sgn, len, key)) {
             throw IdentityError(
                 std::string("Signature verification failed")
             );
         }
     }
+
+    ~ECDSAIdentity() {
+        EC_KEY_free(key);
+    }
 };
 
 class ECDSAPrivateIdentity : public ECDSAIdentity {
     void sign(const byte *dgst, size_t dgst_len, std::vector<byte> &out) {
-        std::unique_ptr<ECDSA_SIG, decltype(&::ECDSA_SIG_free)> sgn;
+        std::unique_ptr<byte, decltype(&::ECDSA_SIG_free)> sgn(
+            ECDSA_do_sign(dgst, dgst_len, key)
+        );
         pcall(
             "Signing message",
-            sgn = ECDSA_do_sign(dgst, dgst, key.get())
+            sgn.get()
         );
         auto sig_len = ECDSA_size(sgn_len);
         out.insert(out.back(), sgn, sgn + sig_len);
