@@ -2,7 +2,9 @@
 #define __IDENTITY_H_
 
 #include <openssl/ec.h>
+#include <openssl/objects.h>
 
+#include "common.h"
 #include "err.h"
 
 typedef uint8_t byte;
@@ -42,32 +44,39 @@ class ECDSAIdentity : public Identity {
     }
 
     ~ECDSAIdentity() {
-        EC_KEY_free(key);
+        if (key) {
+            EC_KEY_free(key);
+        }
     }
 };
 
 class ECDSAPrivateIdentity : public ECDSAIdentity {
     void sign(const byte *dgst, size_t dgst_len, std::vector<byte> &out) {
-        std::unique_ptr<byte, decltype(&::ECDSA_SIG_free)> sgn(
-            ECDSA_do_sign(dgst, dgst_len, key)
-        );
-        pcall(
-            "Signing message",
-            sgn.get()
-        );
-        auto sig_len = ECDSA_size(sgn_len);
-        out.insert(out.back(), sgn, sgn + sig_len);
-        //ECDSA_SIG_free(sgn);
+        unsigned int sig_len = ECDSA_size(key);
+        auto new_sig_len = sig_len;
+
+        auto inserted_pos = out.insert(out.end(), 0, sig_len);
+        ECDSA_sign(0, dgst, dgst_len, &* inserted_pos, &new_sig_len, key);
+
+        if (UNLIKELY(new_sig_len < sig_len)) {
+            out.erase(inserted_pos + new_sig_len, out.end());
+            fcall("Signing message", new_sig_len);
+        }
     }
 
     void init(Config *cfg) {
+        if ( key ) {
+            EC_KEY_free(key);
+            key = NULL;
+        }
+
         const char *crv_name;
-        CONFIGURE(crv);
+        CONFIGURE(crv_name);
 
         int nid;
         fcall(
             "Parsing curve name",
-            (nid = OBJ_txt2nid()) != NID_undef
+            (nid = OBJ_txt2nid(crv_name)) != NID_undef
         );
 
         pcall(

@@ -50,6 +50,12 @@ auto cvt_val<uint32_t>(const char *str) {
     return (uint32_t)strtoul(str, NULL, 10);
 }
 
+template<> // WARNING: returned string is temporary
+auto cvt_val<const char *>(const char *str) {
+    return str;
+}
+
+
 class ImmutableConfig {
     class ParseConfig {
         std::vector<uint8_t> &out_data;
