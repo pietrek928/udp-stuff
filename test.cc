@@ -28,6 +28,17 @@ T func() {
 }
 
 int main() {
+    Config key_cfg("");//("crv secp256k1");
+    ECDSAPrivateIdentity ident;
+    ident.init(&key_cfg);
+
+    std::vector<byte_t> v1, v2;
+    v2.insert(v2.end(), 1280, 232);
+    ident.sign(&* v2.begin(), v2.size(), v1);
+
+    cout << v1.size() << endl;
+
+    return 0;
     //int a = (int)func<>();
     //Config c1("src_ip ipv4:127.0.0.1; dst_ip ipv4:127.0.0.1; src_port 12; dst_port 15");
     //Config c2("src_ip ipv4:127.0.0.1; dst_ip ipv4:127.0.0.1; src_port 15; dst_port 12");

@@ -7,7 +7,6 @@
 #include "common.h"
 #include "err.h"
 
-typedef uint8_t byte;
 
 class Identity {
 public:
@@ -17,7 +16,7 @@ public:
         );
     }
 
-    void sign(const void *dgst, size_t len, void *out) {
+    virtual void sign(const byte_t *dgst, size_t dgst_len, std::vector<byte_t> &out) {
         throw IdentityError(
             std::string("Verify not implemented for class ") + typeid(*this).name()
         );
@@ -35,7 +34,7 @@ class ECDSAIdentity : public Identity {
 
     EC_KEY *key = NULL;
 
-    void verify(const byte *sgn, const byte *dgst, size_t len) {
+    void verify(const byte_t *sgn, const byte_t *dgst, size_t len) {
         if (ECDSA_verify(0, dgst, len, sgn, len, key)) {
             throw IdentityError(
                 std::string("Signature verification failed")
@@ -51,11 +50,13 @@ class ECDSAIdentity : public Identity {
 };
 
 class ECDSAPrivateIdentity : public ECDSAIdentity {
-    void sign(const byte *dgst, size_t dgst_len, std::vector<byte> &out) {
+    public:
+
+    void sign(const byte_t *dgst, size_t dgst_len, std::vector<byte_t> &out) {
         unsigned int sig_len = ECDSA_size(key);
         auto new_sig_len = sig_len;
 
-        auto inserted_pos = out.insert(out.end(), 0, sig_len);
+        auto inserted_pos = out.insert(out.end(), sig_len, 0);
         ECDSA_sign(0, dgst, dgst_len, &* inserted_pos, &new_sig_len, key);
 
         if (UNLIKELY(new_sig_len < sig_len)) {
@@ -70,18 +71,24 @@ class ECDSAPrivateIdentity : public ECDSAIdentity {
             key = NULL;
         }
 
-        const char *crv_name;
-        CONFIGURE(crv_name);
+        const char *crv;
+        //CONFIGURE(crv);
+        crv = "secp256k1";
 
         int nid;
         fcall(
             "Parsing curve name",
-            (nid = OBJ_txt2nid(crv_name)) != NID_undef
+            (nid = OBJ_txt2nid(crv)) != NID_undef
         );
 
         pcall(
-            "Generating new key",
+            "Initializing key",
             key = EC_KEY_new_by_curve_name(nid)
+        );
+
+        fcall(
+            "Generating EC key",
+            EC_KEY_generate_key(key)
         );
     }
 };
