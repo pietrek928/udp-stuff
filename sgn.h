@@ -3,6 +3,7 @@
 
 #include <openssl/ec.h>
 #include <openssl/objects.h>
+#include <openssl/err.h>
 
 #include "common.h"
 #include "err.h"
@@ -10,7 +11,7 @@
 
 class Identity {
 public:
-    virtual void verify(const void *sgn, const void *dgst, size_t len) {
+    virtual void verify(const byte_t *dgst, size_t dgst_len, const byte_t *sgn, size_t sgn_len) {
         throw IdentityError(
             std::string("Verify not implemented for class ") + typeid(*this).name()
         );
@@ -34,8 +35,9 @@ class ECDSAIdentity : public Identity {
 
     EC_KEY *key = NULL;
 
-    void verify(const byte_t *sgn, const byte_t *dgst, size_t len) {
-        if (ECDSA_verify(0, dgst, len, sgn, len, key)) {
+    void verify(const byte_t *dgst, size_t dgst_len, const byte_t *sgn, size_t sgn_len) {
+        auto r = ECDSA_verify(0, dgst, dgst_len, sgn, sgn_len, key);
+        if (UNLIKELY(r != 1)) {
             throw IdentityError(
                 std::string("Signature verification failed")
             );
@@ -72,7 +74,7 @@ class ECDSAPrivateIdentity : public ECDSAIdentity {
         }
 
         const char *crv;
-        //CONFIGURE(crv);
+        CONFIGURE(crv);
         crv = "secp256k1";
 
         int nid;

@@ -28,13 +28,14 @@ T func() {
 }
 
 int main() {
-    Config key_cfg("");//("crv secp256k1");
+    Config key_cfg("crv secp256k1");
     ECDSAPrivateIdentity ident;
     ident.init(&key_cfg);
 
     std::vector<byte_t> v1, v2;
     v2.insert(v2.end(), 1280, 232);
     ident.sign(&* v2.begin(), v2.size(), v1);
+    ident.verify(&* v2.begin(), v2.size(), &* v1.begin(), v1.size());
 
     cout << v1.size() << endl;
 
