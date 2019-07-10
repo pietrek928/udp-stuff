@@ -13,7 +13,7 @@ void print_hex(unsigned char *buf, int n) {
 
 
 #include "err.h"
-#include "buffer.h"
+#include "chained_buffer.h"
 #include "config.h"
 #include "udp4.h"
 #include "sgn.h"

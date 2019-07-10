@@ -1,18 +1,18 @@
-#ifndef __END_H_
-#define __END_H_
+#ifndef __DEC_H_
+#define __DEC_H_
 
 #include "buffer.h"
 
-class Encryptor {
+class Decryptor {
     virtual void load_state(DataLoader &d);
     virtual void store_state(DataStorer &d);
-    virtual void enc(std::vector<bytes> &out, const void *in, size_t l);
-    virtual void enc_flush(std::vector<bytes> &out, const void *in, size_t l);
+    virtual void dec(std::vector<bytes> &out, const void *in, size_t l);
+    virtual void dec_flush(std::vector<bytes> &out, const void *in, size_t l);
     virtual size_t block_size();
 };
 
-template<class EncryptorCore>
-class BlockEncryptor : Encryptor {
+template<class DecryptorCore>
+class BlockDecryptor : Decryptor {
     static constexpr size_t block_size = sizeof(BlockEncryptor::block_t);
 
     EncryptorCore core;
@@ -99,5 +99,5 @@ class BlockEncryptor : Encryptor {
     }
 };
 
-#endif /* __END_H_ */
+#endif /* __DEC_H_ */
 

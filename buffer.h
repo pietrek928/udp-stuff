@@ -1,91 +1,103 @@
 #ifndef __BUFFER_H_
 #define __BUFFER_H_
 
-#include <vector>
-#include <exception>
+template<class T, class len_t = int>
+class PtrBuf {
+    T *buf_e;
+    len_t l;
 
+    public:
 
-class ChainedBuffer {
-public:
-    virtual void vector_insert(std::vector<uint8_t> &v) {
-        throw std::runtime_error("Unimplemented");
+    PtrBuf(T *buf, len_t l)
+        : buf_e(buf + l), l(l) {
+    }
+
+    inline void shift(len_t v) {
+        l -= v;
+    }
+
+    inline auto empty() {
+        return !l;
+    }
+
+    inline auto left() {
+        return l;
+    }
+
+    inline auto start() {
+        return buf_e - l;
+    }
+
+    inline auto end() {
+        return buf_e;
+    }
+
+    inline void finish() {
+        l = 0;
     }
 };
 
-template<class Tstruct>
-class StructBuffer : public ChainedBuffer {
-    ChainedBuffer *parent;
-public:
+template<size_t size, class T, class len_t = int>
+class StaticBuf {
+    T buf[size];
+    len_t l;
 
-    Tstruct struct_ = {};
+    public:
 
-    StructBuffer(ChainedBuffer &parent)
-        : parent(&parent) {}
+    StaticBuf() {
+    }
 
-    void vector_insert(std::vector<uint8_t> &v) {
-        v.insert(v.end(), (uint8_t*)&struct_, ((uint8_t*)&struct_) + sizeof(struct_));
-        parent->vector_insert(v);
+    inline auto buf_e() {
+        return buf + size;
+    }
+
+    public:
+
+    inline void shift(len_t v) {
+        l += v;
+    }
+
+    inline auto empty() {
+        return !l;
+    }
+
+    inline auto left() {
+        return l;
+    }
+
+    inline auto start() {
+        return buf_e() - l;
+    }
+
+    inline auto end() {
+        return buf_e();
+    }
+
+    inline void finish() {
+        l = 0;
     }
 };
 
-template<class Tstruct>
-class StructInitBuffer : public ChainedBuffer {
-public:
-
-    Tstruct struct_;
-
-    StructInitBuffer() {}
-
-    void vector_insert(std::vector<uint8_t> &v) {
-        v.insert(v.end(), (uint8_t*)&struct_, ((uint8_t*)&struct_) + sizeof(struct_));
+template<class Tbin, class Tbout>
+inline void buf_cp(Tbin &in, Tbout &out) {
+    if (in.left() < out.left()) {
+        memcpy(out.start(), in.start(), in.left());
+        out.shift(in.left());
+        in.finish();
+    } else {
+        memcpy(out.start(), in.start(), out.left());
+        in.shift(out.left());
+        out.finish();
     }
-};
+}
 
-class VectorChainedBuffer : public ChainedBuffer {
-    ChainedBuffer *parent;
-public:
+typedef PtrBuf<const byte_t> PtrInBuf;
+typedef PtrBuf<byte_t> PtrOutBuf;
 
-    std::vector<uint8_t> vv;
+template<size_t size>
+typedef StaticBuf<size, const byte_t> StaticInBuf
+template<size_t size>
+typedef StaticBuf<size, byte_t> StaticOutBuf
 
-    template<class ... Targs>
-    VectorChainedBuffer(ChainedBuffer &parent, Targs... vargs)
-        : parent(&parent), vv(vargs...) {}
-
-    void vector_insert(std::vector<uint8_t> &v) {
-        v.insert(v.end(), vv.begin(), vv.end());
-        parent->vector_insert(v);
-    }
-};
-
-class ArrayChainedBuffer : public ChainedBuffer {
-    ChainedBuffer *parent;
-public:
-
-    uint8_t *buf;
-    size_t buf_size;
-
-    ArrayChainedBuffer(ChainedBuffer &parent, uint8_t *buf, size_t buf_size)
-        : parent(&parent), buf(buf), buf_size(buf_size) {}
-
-    void vector_insert(std::vector<uint8_t> &v) {
-        v.insert(v.end(), buf, buf+buf_size);
-        parent->vector_insert(v);
-    }
-};
-
-class ArrayInitBuffer : public ChainedBuffer {
-public:
-
-    uint8_t *buf;
-    size_t buf_size;
-
-    ArrayInitBuffer(uint8_t *buf, size_t buf_size)
-        : buf(buf), buf_size(buf_size) {}
-
-    void vector_insert(std::vector<uint8_t> &v) {
-        v.insert(v.end(), buf, buf+buf_size);
-    }
-};
-
-#endif /* __BUFFER_H_ */
+#ifndef /* __BUFFER_H_ */
 
