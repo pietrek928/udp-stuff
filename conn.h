@@ -1,21 +1,37 @@
 #ifndef __CONN_H_
 #define __CONN_H_
 
-#include "net_drv.h"
+#include "packet_buffer.h"
+#include "packet_store.h"
+#include <cstdint>
+#include <vector>
 
-typedef uint16_t packet_id_t;
+template <class Tseq> class ConnectionStreamHandler {
+  PacketBuffer<PacketStore, Tseq> in_packets;
+  PacketBuffer<PacketStore, Tseq> out_packets;
 
-class Connection {
-    NetDriver *drv = NULL;
-    const NetDriver::NetAddr *addr;
+  struct packet_store_t {
+    PacketStore packet;
+    uint16_t seq;
+  };
+  std::vector<packet_store_t> out_controls;
 
 public:
-    void disconnect();
-    void connect(NetDriver *_drv, const NetDriver::NetAddr *addr);
-    void process_control(packet_id_t id, uint8_t *data, size_t len);
-    void process_data(packet_id_t id, uint8_t *data, size_t len);
-    ~Connection();
+  ConnectionStreamHandler() : in_packets(32), out_packets(32) {}
+  ~ConnectionStreamHandler() {
+    //
+  }
+
+  void process_control(Tseq seq, const void *data, uint32_t len) {
+    //
+  }
+  void process_data(Tseq seq, const void *data, uint32_t len) {
+    //
+  }
+
+  void disconnect() {
+    //
+  }
 };
 
 #endif /* __CONN_H_ */
-
