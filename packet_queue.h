@@ -1,3 +1,5 @@
+#pragma once
+
 #include <cstddef>
 #include <stdexcept>
 #include <new>
@@ -130,7 +132,7 @@ class PacketRecvQueue {
         }
     }
 
-    void push_packet(uint16_t seq, uint32_t size, const uint8_t *data) {
+    void push_packet(uint16_t seq, const uint8_t *data, uint32_t size) {
         // TODO: track duplicates, mapping here
         packets.emplace(seq, size, data);
     }

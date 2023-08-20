@@ -1,8 +1,9 @@
-#ifndef __CONFIG_H_
-#define __CONFIG_H_
+#pragma once
 
-#include <string>
+#include <cstring>
 #include <iomanip>
+#include <string>
+#include <vector>
 
 #include <arpa/inet.h>
 #include <fcntl.h>
@@ -328,6 +329,3 @@ public:
 typedef ImmutableConfig Config;
 
 #define CONFIGURE(vname) {vname = cfg->get<decltype(vname)>(#vname);}
-
-#endif /* __CONFIG_H_ */
-
