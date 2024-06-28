@@ -1,5 +1,4 @@
-#ifndef __ERR_H_
-#define __ERR_H_
+#pragma once
 
 #include <string.h>
 #include <string>
@@ -34,7 +33,7 @@ void __serr(const char *descr, const char *cmd) {
 }
 
 inline void _scall(const char *descr, const char *cmd, bool success) {
-    if (UNLIKELY(!success)) {
+    if (unlikely(!success)) {
         __serr(descr, cmd);
     }
 }
@@ -46,7 +45,7 @@ void __perr(const char *descr, const char *cmd) {
 }
 
 inline void _pcall(const char *descr, const char *cmd, void *ptr) {
-    if (UNLIKELY(!ptr)) {
+    if (unlikely(!ptr)) {
         __perr(descr, cmd);
     }
 }
@@ -58,23 +57,9 @@ void __ferr(const char *descr, const char *cmd) {
 }
 
 inline void _fcall(const char *descr, const char *cmd, bool cond) {
-    if (UNLIKELY(!cond)) {
+    if (unlikely(!cond)) {
         __ferr(descr, cmd);
     }
 }
 
 #define fcall(descr, cmd) _fcall(descr, __AT__ " " #cmd, cmd)
-
-class IdentityError : public std::exception {
-    std::string descr;
-
-public:
-    IdentityError(std::string descr) : descr(descr) {}
-
-    const char *what() const throw () {
-        return descr.c_str();
-    }
-};
-
-#endif /* __ERR_H_ */
-

@@ -64,6 +64,8 @@ struct SymKey : public ControlStruct {
 
 struct DataEncInfo : public ControlStruct {
     uint32_t sgn_key_id;
+    uint32_t checksum_type;
+    uint32_t checksum_size;
     uint32_t sgn_type;
     uint32_t sgn_size;
     uint32_t sym_key_id;
