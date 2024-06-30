@@ -55,7 +55,7 @@ struct PubKey : public ControlStruct {
 
 struct SymKey : public ControlStruct {
     uint32_t conn_key_id;
-    uint32_t sumkey_type;
+    uint32_t symkey_type;
     uint32_t symkey_size;
     uint8_t data[];
 
@@ -63,8 +63,9 @@ struct SymKey : public ControlStruct {
 } PACKED;
 
 struct DataEncInfo : public ControlStruct {
+    uint32_t sym_key_id;
+    uint32_t random_prefix_size;
     uint32_t sgn_key_id;
     uint32_t sgn_type;
     uint32_t sgn_size;
-    uint32_t sym_key_id;
 } PACKED;
