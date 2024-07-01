@@ -36,6 +36,15 @@ void tcpv4_connect(int fd, in_port_t dst_port, in_addr_t dst_addr) {
     ccall("connecting", connect(fd, (struct sockaddr*)(&addr), sizeof(addr)));
 }
 
+int tcpv4_connect_unsafe(int fd, in_port_t dst_port, in_addr_t dst_addr) {
+    sockaddr_in addr;
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(dst_port);
+    addr.sin_addr.s_addr = htonl(dst_addr);
+
+    return connect(fd, (struct sockaddr*)(&addr), sizeof(addr));
+}
+
 void tcpv4_connect_abort(int fd) {
     sockaddr_in addr;
     addr.sin_family = AF_UNSPEC;
@@ -65,7 +74,7 @@ int tcpv4_hole_punch(const TCPv4HolePunchSettings &settings) {
 
         unsigned int ping_count = listen ? settings.listen_ping_count : settings.connect_ping_count;
         do {
-            tcpv4_connect(main_fd, settings.dst_port, settings.dst_addr);
+            tcpv4_connect_unsafe(main_fd, settings.dst_port, settings.dst_addr);
             sleep_sec(settings.ping_sec);
             tcpv4_connect_abort(main_fd);
         } while (--ping_count);
@@ -83,8 +92,12 @@ int tcpv4_hole_punch(const TCPv4HolePunchSettings &settings) {
             set_socket_timeout(main_fd, settings.connect_sec);
             auto connect_count = settings.connect_count;
             do {
-                tcpv4_connect(main_fd, settings.dst_port, settings.dst_addr);
-                return main_fd.handle();
+                try {
+                    tcpv4_connect(main_fd, settings.dst_port, settings.dst_addr);
+                    return main_fd.handle();
+                } catch (const ConnectionError &e) {
+                    // ignore
+                }
             } while (--connect_count);
         }
 
