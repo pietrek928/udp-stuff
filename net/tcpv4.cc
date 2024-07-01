@@ -63,6 +63,14 @@ TCPv4AcceptResult tcpv4_accept(int fd, bool create_blocking) {
     return ret;
 }
 
+TCPv4AcceptResult tcpv4_accept_unsafe(int fd, bool create_blocking) {
+    int flags = create_blocking ? 0 : SOCK_NONBLOCK;
+    TCPv4AcceptResult ret;
+    ret.new_fd = accept4(fd, (struct sockaddr*)(&ret.addr), &ret.addr_len, flags);
+    ccall("accepting", ret.new_fd);
+    return ret;
+}
+
 int tcpv4_hole_punch(const TCPv4HolePunchSettings &settings) {
     auto sequence_tries = settings.tries_count;
     bool listen = settings.listen_first;
@@ -83,7 +91,7 @@ int tcpv4_hole_punch(const TCPv4HolePunchSettings &settings) {
         if (listen) {
             set_socket_timeout(main_fd, settings.connect_sec * settings.connect_count);
             tcpv4_listen(main_fd);
-            auto res = tcpv4_accept(main_fd, true);
+            auto res = tcpv4_accept_unsafe(main_fd, true);
             if (res.new_fd >= 0) {
                 // TODO: verify src ip here
                 return res.new_fd;
