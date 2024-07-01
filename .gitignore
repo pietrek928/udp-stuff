@@ -1,3 +1,10 @@
+# cmake output files
+build
+.cache
+CMakeFiles
+**/CMakeCache.txt
+**/*.cmake
+**/Makefile
 
 # C++ output files
 **/*.e
