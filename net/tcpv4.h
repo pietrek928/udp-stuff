@@ -25,6 +25,8 @@ typedef struct {
     unsigned int listen_ping_count;
     float connect_sec;
     unsigned int connect_count;
+    float listen_sec;
+    unsigned int listen_count;
 } TCPv4HolePunchSettings;
 
 int tcpv4_new_socket(bool blocking = true);

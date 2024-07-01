@@ -88,13 +88,16 @@ int tcpv4_hole_punch(const TCPv4HolePunchSettings &settings) {
 
         set_socket_blocking(main_fd, true);
         if (listen) {
-            set_socket_timeout(main_fd, settings.connect_sec * settings.connect_count);
+            set_socket_timeout(main_fd, settings.listen_sec);
             tcpv4_listen(main_fd);
-            auto res = tcpv4_accept_unsafe(main_fd, true);
-            if (res.new_fd >= 0) {
-                // TODO: verify src ip here
-                return res.new_fd;
-            }
+            unsigned int listen_count = settings.listen_count;
+            do {
+                auto res = tcpv4_accept_unsafe(main_fd, true);
+                if (res.new_fd >= 0) {
+                    // TODO: verify src ip here
+                    return res.new_fd;
+                }
+            } while (--listen_count);
         } else {
             set_socket_timeout(main_fd, settings.connect_sec);
 
