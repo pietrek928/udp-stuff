@@ -67,7 +67,6 @@ TCPv4AcceptResult tcpv4_accept_unsafe(int fd, bool create_blocking) {
     int flags = create_blocking ? 0 : SOCK_NONBLOCK;
     TCPv4AcceptResult ret;
     ret.new_fd = accept4(fd, (struct sockaddr*)(&ret.addr), &ret.addr_len, flags);
-    ccall("accepting", ret.new_fd);
     return ret;
 }
 
