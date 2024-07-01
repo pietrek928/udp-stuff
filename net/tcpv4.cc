@@ -86,8 +86,11 @@ int tcpv4_hole_punch(const TCPv4HolePunchSettings &settings) {
             tcpv4_connect_abort(main_fd);
         } while (--ping_count);
 
-        set_socket_blocking(main_fd, true);
         if (listen) {
+            main_fd.clear();
+            main_fd = tcpv4_new_socket(true);
+            tcpv4_bind_port(main_fd, settings.src_port, settings.src_addr || INADDR_ANY);
+
             set_socket_timeout(main_fd, settings.connect_sec * settings.connect_count);
             tcpv4_listen(main_fd);
             auto res = tcpv4_accept_unsafe(main_fd, true);
@@ -96,7 +99,9 @@ int tcpv4_hole_punch(const TCPv4HolePunchSettings &settings) {
                 return res.new_fd;
             }
         } else {
+            set_socket_blocking(main_fd, true);
             set_socket_timeout(main_fd, settings.connect_sec);
+
             auto connect_count = settings.connect_count;
             do {
                 try {
