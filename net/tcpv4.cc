@@ -22,7 +22,7 @@ void tcpv4_bind_port(int fd, in_port_t src_port, in_addr_t src_addr) {
     sockaddr_in addr;
     addr.sin_family = AF_INET;
     addr.sin_port = htons(src_port);
-    addr.sin_addr.s_addr = htonl(src_addr);
+    addr.sin_addr.s_addr = src_addr;
 
     ccall("binding port", bind(fd, (struct sockaddr*)(&addr), sizeof(addr)));
 }
@@ -31,7 +31,7 @@ void tcpv4_connect(int fd, in_port_t dst_port, in_addr_t dst_addr) {
     sockaddr_in addr;
     addr.sin_family = AF_INET;
     addr.sin_port = htons(dst_port);
-    addr.sin_addr.s_addr = htonl(dst_addr);
+    addr.sin_addr.s_addr = dst_addr;
 
     ccall("connecting", connect(fd, (struct sockaddr*)(&addr), sizeof(addr)));
 }
@@ -40,7 +40,7 @@ int tcpv4_connect_unsafe(int fd, in_port_t dst_port, in_addr_t dst_addr) {
     sockaddr_in addr;
     addr.sin_family = AF_INET;
     addr.sin_port = htons(dst_port);
-    addr.sin_addr.s_addr = htonl(dst_addr);
+    addr.sin_addr.s_addr = dst_addr;
 
     return connect(fd, (struct sockaddr*)(&addr), sizeof(addr));
 }
