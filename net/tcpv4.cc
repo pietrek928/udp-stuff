@@ -71,50 +71,31 @@ TCPv4AcceptResult tcpv4_accept_unsafe(int fd, bool create_blocking) {
 }
 
 int tcpv4_hole_punch(const TCPv4HolePunchSettings &settings) {
-    auto sequence_tries = settings.tries_count;
+    auto connect_tries = settings.connect_count;
     bool listen = settings.listen_first;
     do {
         auto start_timestamp = timespec_timestamp();
 
-        SocketGuard main_fd = tcpv4_new_socket(false);
+        SocketGuard main_fd = tcpv4_new_socket(true);
         tcpv4_bind_port(main_fd, settings.src_port, settings.src_addr || INADDR_ANY);
+        set_socket_timeout(main_fd, settings.connect_sec);
 
-        unsigned int ping_count = listen ? settings.listen_ping_count : settings.connect_ping_count;
-        do {
-            tcpv4_connect_unsafe(main_fd, settings.dst_port, settings.dst_addr);
-            sleep_sec(settings.ping_sec);
-            tcpv4_connect_abort(main_fd);
-        } while (--ping_count);
-
-        set_socket_blocking(main_fd, true);
         if (listen) {
-            set_socket_timeout(main_fd, settings.listen_sec);
             tcpv4_listen(main_fd);
-            unsigned int listen_count = settings.listen_count;
-            do {
-                auto res = tcpv4_accept_unsafe(main_fd, true);
-                if (res.new_fd >= 0) {
-                    // TODO: verify src ip here
-                    return res.new_fd;
-                }
-            } while (--listen_count);
+            auto res = tcpv4_accept_unsafe(main_fd, true);
+            if (res.new_fd >= 0) {
+                // TODO: verify src ip here
+                return res.new_fd;
+            }
         } else {
-            set_socket_timeout(main_fd, settings.connect_sec);
-
-            auto connect_count = settings.connect_count;
-            do {
-                try {
-                    tcpv4_connect(main_fd, settings.dst_port, settings.dst_addr);
-                    return main_fd.handle();
-                } catch (const ConnectionError &e) {
-                    // ignore
-                }
-            } while (--connect_count);
+            if (!tcpv4_connect_unsafe(main_fd, settings.dst_port, settings.dst_addr)) {
+                return main_fd.handle();
+            }
         }
 
         auto end_timestamp = timespec_timestamp();
-        sleep_sec(settings.sequence_sec - timespec_diff_sec(start_timestamp, end_timestamp));
-    } while (--sequence_tries);
+        sleep_sec(settings.connect_sec - timespec_diff_sec(start_timestamp, end_timestamp));
+    } while (--connect_tries);
 
     return -1;
 }

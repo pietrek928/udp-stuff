@@ -16,17 +16,10 @@ typedef struct {
     in_addr_t dst_addr;
 
     time_t start_time;
-    float sequence_sec;
-    unsigned int tries_count;
 
     bool listen_first;
-    float ping_sec;
-    unsigned int connect_ping_count;
-    unsigned int listen_ping_count;
     float connect_sec;
     unsigned int connect_count;
-    float listen_sec;
-    unsigned int listen_count;
 } TCPv4HolePunchSettings;
 
 int tcpv4_new_socket(bool blocking = true);
