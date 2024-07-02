@@ -95,6 +95,8 @@ int tcpv4_hole_punch(const TCPv4HolePunchSettings &settings) {
 
         auto end_timestamp = timespec_timestamp();
         sleep_sec(settings.connect_sec - timespec_diff_sec(start_timestamp, end_timestamp));
+
+        listen = !listen;
     } while (--connect_tries);
 
     return -1;

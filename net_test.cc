@@ -12,7 +12,7 @@ int main() {
         .start_time = 0,
         .listen_first = false,
         .connect_sec = 4,
-        .connect_count = 2,
+        .connect_count = 4,
     };
     inet_pton(AF_INET, "194.181.188.2", &settings.dst_addr);
     int sock = tcpv4_hole_punch(settings);
