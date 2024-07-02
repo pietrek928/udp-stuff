@@ -18,7 +18,9 @@ typedef struct {
     time_t start_time;
 
     bool listen_first;
-    float connect_sec;
+    float connect_sec_start;
+    float connect_sec_max;
+    float connect_sec_scale;
     unsigned int connect_count;
 } TCPv4HolePunchSettings;
 

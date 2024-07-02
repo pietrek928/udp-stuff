@@ -73,12 +73,13 @@ TCPv4AcceptResult tcpv4_accept_unsafe(int fd, bool create_blocking) {
 int tcpv4_hole_punch(const TCPv4HolePunchSettings &settings) {
     auto connect_tries = settings.connect_count;
     bool listen = settings.listen_first;
+    float connect_sec = settings.connect_sec_start;
     do {
         auto start_timestamp = timespec_timestamp();
 
         SocketGuard main_fd = tcpv4_new_socket(true);
         tcpv4_bind_port(main_fd, settings.src_port, settings.src_addr || INADDR_ANY);
-        set_socket_timeout(main_fd, settings.connect_sec);
+        set_socket_timeout(main_fd, connect_sec);
 
         if (listen) {
             tcpv4_listen(main_fd);
@@ -94,9 +95,13 @@ int tcpv4_hole_punch(const TCPv4HolePunchSettings &settings) {
         }
 
         auto end_timestamp = timespec_timestamp();
-        sleep_sec(settings.connect_sec - timespec_diff_sec(start_timestamp, end_timestamp));
+        sleep_sec(connect_sec - timespec_diff_sec(start_timestamp, end_timestamp));
 
         listen = !listen;
+        connect_sec *= settings.connect_sec_scale;
+        if (connect_sec > settings.connect_sec_max) {
+            connect_sec = settings.connect_sec_max;
+        }
     } while (--connect_tries);
 
     return -1;
