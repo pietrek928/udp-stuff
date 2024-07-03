@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cstdint>
-#include <string>
 
 #include <openssl/evp.h>
 #include <openssl/rsa.h>

@@ -1,5 +1,0 @@
-{
-    "clang.cxxflags": [
-        "-I/usr/include/libressl"
-    ]
-}

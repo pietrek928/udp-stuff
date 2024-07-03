@@ -5,9 +5,9 @@
 
 int main() {
     TCPv4HolePunchSettings settings = {
-        .src_port = 12345,
+        .src_port = htons(12345),
         .src_addr = INADDR_ANY,
-        .dst_port = 12345,
+        .dst_port = htons(12345),
         .dst_addr = INADDR_ANY,
         .start_time = 0,
 
