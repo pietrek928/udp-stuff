@@ -9,7 +9,7 @@
 #include <openssl/err.h>
 #include <vector>
 
-#include "../common.h"
+#include "../utils/common.h"
 
 
 typedef GuardPointer<EVP_MD_CTX, EVP_MD_CTX_free> EVP_MD_CTX_ptr;
@@ -21,17 +21,17 @@ class LibreSSLSigner {
     EVP_MD_CTX_ptr ctx = NULL;
 
     public:
-    LibreSSLSigner(int type, const uint8_t *priv_key, size_t priv_key_len);
-    size_t sign(const uint8_t *data, size_t data_len, uint8_t *out_buf, size_t out_len);
+    LibreSSLSigner(int type, const byte_t *priv_key, size_t priv_key_len);
+    size_t sign(const byte_t *data, size_t data_len, byte_t *out_buf, size_t out_len);
 };
 
 class LibreSSLVerifier {
     EVP_MD_CTX_ptr ctx = NULL;
 
     public:
-    LibreSSLVerifier(int type, const uint8_t *pub_key, size_t pub_key_len);
-    bool verify(const uint8_t *dgst, size_t dgst_len, const uint8_t *sgn, size_t sgn_len);
+    LibreSSLVerifier(int type, const byte_t *pub_key, size_t pub_key_len);
+    bool verify(const byte_t *dgst, size_t dgst_len, const byte_t *sgn, size_t sgn_len);
 };
 
-void generate_rsa_key(size_t bits, std::vector<uint8_t> &pubkey, std::vector<uint8_t> &privkey);
-void generate_ecdsa_key(int curve_nid, std::vector<uint8_t> &pubkey, std::vector<uint8_t> &privkey);
+void generate_rsa_key(size_t bits, std::vector<byte_t> &pubkey, std::vector<byte_t> &privkey);
+void generate_ecdsa_key(int curve_nid, std::vector<byte_t> &pubkey, std::vector<byte_t> &privkey);

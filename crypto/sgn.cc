@@ -2,7 +2,8 @@
 
 #include "call_check.h"
 
-LibreSSLSigner::LibreSSLSigner(int type, const uint8_t *priv_key, size_t priv_key_len) {
+
+LibreSSLSigner::LibreSSLSigner(int type, const byte_t *priv_key, size_t priv_key_len) {
     EVP_PKEY_ptr pkey = EVP_PKEY_new_raw_private_key(
         type, NULL, priv_key, priv_key_len
     );
@@ -18,8 +19,8 @@ LibreSSLSigner::LibreSSLSigner(int type, const uint8_t *priv_key, size_t priv_ke
 }
 
 size_t LibreSSLSigner::sign(
-    const uint8_t *data, size_t data_len, uint8_t *out_buf, size_t out_len
-    ) {
+    const byte_t *data, size_t data_len, byte_t *out_buf, size_t out_len
+) {
     size_t sgn_len = out_len;
     scall("signer - signing digest", EVP_DigestSign(
         ctx, out_buf, &sgn_len, data, data_len
@@ -31,7 +32,7 @@ size_t LibreSSLSigner::sign(
 }
 
 
-LibreSSLVerifier::LibreSSLVerifier(int type, const uint8_t *pub_key, size_t pub_key_len) {
+LibreSSLVerifier::LibreSSLVerifier(int type, const byte_t *pub_key, size_t pub_key_len) {
     EVP_PKEY_ptr pkey = EVP_PKEY_new_raw_public_key(
         type, NULL, pub_key, pub_key_len
     );
@@ -46,7 +47,9 @@ LibreSSLVerifier::LibreSSLVerifier(int type, const uint8_t *pub_key, size_t pub_
     );
 }
 
-bool LibreSSLVerifier::verify(const uint8_t *dgst, size_t dgst_len, const uint8_t *sgn, size_t sgn_len) {
+bool LibreSSLVerifier::verify(
+    const byte_t *dgst, size_t dgst_len, const byte_t *sgn, size_t sgn_len
+) {
     auto result = EVP_DigestVerify(
         ctx, sgn, sgn_len, dgst, dgst_len
     );
@@ -62,7 +65,7 @@ bool LibreSSLVerifier::verify(const uint8_t *dgst, size_t dgst_len, const uint8_
 
 
 void generate_rsa_key(
-    size_t bits, std::vector<uint8_t> &pubkey, std::vector<uint8_t> &privkey
+    size_t bits, std::vector<byte_t> &pubkey, std::vector<byte_t> &privkey
 ) {
     EVP_PKEY_CTX_ptr pkey = EVP_PKEY_CTX_new_id(EVP_PKEY_RSA, NULL);
     scall("EVP_PKEY_CTX_new_id", pkey);
@@ -97,7 +100,9 @@ void generate_rsa_key(
     );
 }
 
-void generate_ecdsa_key(int curve_nid, std::vector<uint8_t> &pubkey, std::vector<uint8_t> &privkey) {
+void generate_ecdsa_key(
+    int curve_nid, std::vector<byte_t> &pubkey, std::vector<byte_t> &privkey
+) {
     EVP_PKEY_CTX_ptr pkey = EVP_PKEY_CTX_new_id(EVP_PKEY_EC, NULL);
     scall("EVP_PKEY_CTX_new_id", pkey);
 

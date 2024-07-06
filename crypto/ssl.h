@@ -2,7 +2,7 @@
 
 #include <openssl/ssl.h>
 
-#include "../common.h"
+#include "../utils/common.h"
 #include "exception.h"
 
 typedef GuardPointer<SSL_CTX, SSL_CTX_free> SSL_CTX_ptr;
