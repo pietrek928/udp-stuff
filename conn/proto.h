@@ -1,3 +1,5 @@
+#include "../utils/common.h"
+
 #include <cstdint>
 
 typedef enum {
@@ -13,3 +15,8 @@ typedef struct {
     uint32_t size;
     uint32_t type;
 } MessageHeader_t;
+
+// 512-bits id
+typedef struct {
+    byte_t id[64];
+} PeerId_t;

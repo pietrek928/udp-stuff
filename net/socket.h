@@ -2,12 +2,14 @@
 
 #include <unistd.h>
 
+typedef int socket_t;
+
 class SocketGuard {
     public:
 
-    int fd = -1;
+    socket_t fd = -1;
 
-    inline SocketGuard(int fd) : fd(fd) {}
+    inline SocketGuard(socket_t fd) : fd(fd) {}
     inline SocketGuard() {}
 
     inline SocketGuard(const SocketGuard&) = delete;
@@ -51,5 +53,5 @@ class SocketGuard {
     }
 };
 
-void set_socket_blocking(int fd, bool blocking = true);
-void set_socket_timeout(int fd, float timeout_sec);
+void set_socket_blocking(socket_t fd, bool blocking = true);
+void set_socket_timeout(socket_t fd, float timeout_sec);

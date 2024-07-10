@@ -131,6 +131,16 @@ class LockObject {
         add_to_futex_waiters(-1);
     }
 
+    inline void futex_wait(futex_t start_val, float timeout_sec) {
+        struct timespec timeout;
+        timeout.tv_sec = (time_t)timeout_sec;
+        timeout.tv_nsec = (long)((timeout_sec - timeout.tv_sec) * 1e9);
+
+        add_to_futex_waiters(1);
+        futex(FUTEX_WAIT, start_val, &timeout, NULL, 0);
+        add_to_futex_waiters(-1);
+    }
+
     inline auto atomic_try_lock() {
         return __sync_bool_compare_and_swap(&_futex_var, 0, 1);
     }

@@ -1,10 +1,11 @@
 #pragma once
 
+#include "socket.h"
+
 #include <netinet/in.h>
 
-
 typedef struct TCPv4AcceptResult {
-    int new_fd;
+    socket_t new_fd;
     sockaddr_in addr;
     socklen_t addr_len = sizeof(addr);
 } TCPv4AcceptResult;
@@ -24,11 +25,11 @@ typedef struct {
     unsigned int connect_count;
 } TCPv4HolePunchSettings;
 
-int tcpv4_new_socket(bool blocking = true);
-void tcpv4_close_socket(int fd);
-void tcpv4_bind_port(int fd, in_port_t src_port, in_addr_t src_addr = INADDR_ANY);
-void tcpv4_connect(int fd, in_port_t dst_port, in_addr_t dst_addr);
-void tcpv4_connect_abort(int fd);
-void tcpv4_listen(int fd, int backlog = 1);
-TCPv4AcceptResult tcpv4_accept(int fd, bool create_blocking = true);
-int tcpv4_hole_punch(const TCPv4HolePunchSettings &settings);
+socket_t tcpv4_new_socket(bool blocking = true);
+void tcpv4_close_socket(socket_t fd);
+void tcpv4_bind_port(socket_t fd, in_port_t src_port, in_addr_t src_addr = INADDR_ANY);
+void tcpv4_connect(socket_t fd, in_port_t dst_port, in_addr_t dst_addr);
+void tcpv4_connect_abort(socket_t fd);
+void tcpv4_listen(socket_t fd, int backlog = 1);
+TCPv4AcceptResult tcpv4_accept(socket_t fd, bool create_blocking = true);
+socket_t tcpv4_hole_punch(const TCPv4HolePunchSettings &settings);
