@@ -1,7 +1,6 @@
 #pragma once
 
 #include "../utils/common.h"
-#include "exception.h"
 
 #include <cstring>
 

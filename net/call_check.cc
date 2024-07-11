@@ -1,5 +1,6 @@
 #include "call_check.h"
 
+#include "exception.h"
 
 void __conn_err(const char *descr, const char * cmd, int ret_val) {
     throw ConnectionError(
