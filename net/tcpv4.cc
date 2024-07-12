@@ -2,6 +2,7 @@
 
 #include "call_check.h"
 #include "../utils/time.h"
+#include "exception.h"
 
 #include <sys/socket.h>
 #include <unistd.h>
@@ -103,5 +104,5 @@ socket_t tcpv4_hole_punch(const TCPv4HolePunchSettings &settings) {
         }
     } while (--connect_tries);
 
-    return -1;
+    throw ConnectionError("TCPv4 hole punching failed");
 }

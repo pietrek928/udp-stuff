@@ -1,5 +1,8 @@
+#pragma once
+
 #include "../utils/common.h"
 
+#include <cstddef>
 #include <cstdint>
 
 typedef enum {
@@ -20,3 +23,20 @@ typedef struct {
 typedef struct {
     byte_t id[64];
 } PeerId_t;
+
+#include <unordered_map>
+
+template <>
+struct std::hash<PeerId_t>
+{
+  std::size_t operator()(const PeerId_t& k) const
+  {
+    const std::size_t *data_ptr = (std::size_t *)&k.id;
+
+    std::size_t v = 0;
+    for (int i=0; i<sizeof(PeerId_t)/sizeof(std::size_t); i++) {
+        v += data_ptr[i];
+    }
+    return v;
+  }
+};

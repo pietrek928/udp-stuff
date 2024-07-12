@@ -63,7 +63,7 @@ SSL_CTX_ptr SSLCreateContext() {
     return ctx;
 }
 
-SSL_ptr SSLCreate(SSL_CTX *ctx, int fd) {
+SSL_ptr SSLCreate(SSL_CTX *ctx, socket_t fd) {
     SSL_ptr ssl(SSL_new(ctx));
     scall("initializing ssl connection", ssl);
     scall("ssl connection - attaching socket", SSL_set_fd(ssl, fd));

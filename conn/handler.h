@@ -17,7 +17,7 @@ class GlobalChannelHandler {
     void *arg;
 
     GlobalChannelHandler() = default;
-    GlobalChannelHandler(
+    inline GlobalChannelHandler(
         uint32_t max_data_size,
         void (*on_data)(void *arg, const PeerId_t &src_id, const uint8_t *data, uint32_t size),
         void (*show_description)(void *arg, const PeerId_t &src_id, std::vector<byte_t> &data),
@@ -30,7 +30,7 @@ class GlobalChannelHandler {
     GlobalChannelHandler &operator=(const GlobalChannelHandler &other) = delete;
     GlobalChannelHandler &operator=(GlobalChannelHandler &&other) = default;
 
-    ~GlobalChannelHandler() {
+    inline ~GlobalChannelHandler() {
         if (destroy) {
             destroy(arg);
         }
@@ -46,7 +46,7 @@ class PeerChannelHandler {
     void *arg;
 
     PeerChannelHandler() = default;
-    PeerChannelHandler(
+    inline PeerChannelHandler(
         uint32_t max_data_size,
         void (*on_data)(void *arg, const uint8_t *data, uint32_t size),
         void (*show_description)(void *arg, const PeerId_t &src_id, std::vector<byte_t> &data),
@@ -59,18 +59,12 @@ class PeerChannelHandler {
     PeerChannelHandler &operator=(const PeerChannelHandler &other) = delete;
     PeerChannelHandler &operator=(PeerChannelHandler &&other) = default;
 
-    ~PeerChannelHandler() {
+    inline ~PeerChannelHandler() {
         if (destroy) {
             destroy(arg);
         }
     }
 };
-
-typedef struct PeerConnectionData {
-    PeerId_t peer_id;
-    std::unordered_map<uint32_t, PeerChannelHandler> open_channel_handlers;
-} PeerConnectionData;
-
 
 void register_global_handler(uint32_t type, GlobalChannelHandler &&handler);
 bool global_handle_data(const PeerId_t &src_id, uint32_t type, const byte_t *data, uint32_t size);

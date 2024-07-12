@@ -8,10 +8,10 @@
 std::unordered_map<uint32_t, GlobalChannelHandler> global_channel_handlers;
 
 void register_global_handler(uint32_t type, GlobalChannelHandler &&handler) {
-    if (global_channel_handlers.find(type) != global_channel_handlers.end()) {
+    auto emplace_result = global_channel_handlers.emplace(type, std::move(handler));
+    if (!emplace_result.second) {
         throw std::runtime_error("Handler already registered");
     }
-    global_channel_handlers[type] = handler;
 }
 
 bool global_handle_data(const PeerId_t &src_id, uint32_t type, const byte_t *data, uint32_t size) {
