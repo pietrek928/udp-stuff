@@ -2,6 +2,8 @@
 
 #include "../net/exception.h"
 #include "../net/tcpv4.h"
+#include "proto.h"
+
 
 std::unordered_map<PeerId_t, PeerConnection> connected_peers;
 
@@ -21,7 +23,28 @@ void peer_listen_thread(uint16_t port) {
     }
 }
 
-void make_peer_connection(SSL_CTX *ctx, const TCPv4HolePunchSettings settings) {
+PeerConnection make_peer_punch_tcpv4(
+    SSL_CTX *ctx, PeerId_t peer_id, const TCPv4HolePunchSettings settings
+) {
     SocketGuard s = tcpv4_hole_punch(settings);
-    SSL_ptr ssl = SSLCreate(ctx, s);
+    SSL_ptr ssl = SSLCreate(ctx, s); // TODO: validate peer id here
+
+    return {
+        .socket = s.handle(),
+        .conn_type = TCPv4SSL,
+        .src_address = {
+            .ipv4 = {
+                .ip = settings.src_addr,
+                .port = settings.src_port,
+            }
+        },
+        .dst_address = {
+            .ipv4 = {
+                .ip = settings.src_addr,
+                .port = settings.src_port,
+            }
+        },
+        .ssl = std::move(ssl),
+        .peer_id = peer_id,
+    };
 }
