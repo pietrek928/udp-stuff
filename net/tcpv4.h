@@ -7,7 +7,6 @@
 typedef struct TCPv4AcceptResult {
     socket_t new_fd;
     sockaddr_in addr;
-    socklen_t addr_len = sizeof(addr);
 } TCPv4AcceptResult;
 
 typedef struct {

@@ -58,7 +58,8 @@ void tcpv4_listen(socket_t fd, int backlog) {
 TCPv4AcceptResult tcpv4_accept(socket_t fd, bool create_blocking) {
     int flags = create_blocking ? 0 : SOCK_NONBLOCK;
     TCPv4AcceptResult ret;
-    ret.new_fd = accept4(fd, (struct sockaddr*)(&ret.addr), &ret.addr_len, flags);
+    socklen_t addr_len;
+    ret.new_fd = accept4(fd, (struct sockaddr*)(&ret.addr), &addr_len, flags);
     ccall("accepting", ret.new_fd);
     return ret;
 }
@@ -66,7 +67,8 @@ TCPv4AcceptResult tcpv4_accept(socket_t fd, bool create_blocking) {
 TCPv4AcceptResult tcpv4_accept_unsafe(socket_t fd, bool create_blocking) {
     int flags = create_blocking ? 0 : SOCK_NONBLOCK;
     TCPv4AcceptResult ret;
-    ret.new_fd = accept4(fd, (struct sockaddr*)(&ret.addr), &ret.addr_len, flags);
+    socklen_t addr_len;
+    ret.new_fd = accept4(fd, (struct sockaddr*)(&ret.addr), &addr_len, flags);
     return ret;
 }
 
@@ -85,7 +87,12 @@ socket_t tcpv4_hole_punch(const TCPv4HolePunchSettings &settings) {
             tcpv4_listen(main_fd);
             auto res = tcpv4_accept_unsafe(main_fd, true);
             if (res.new_fd >= 0) {
-                // TODO: verify src ip here
+                if (res.addr.sin_addr.s_addr != settings.dst_addr) {
+                    throw ConnectionError("Incorrent peer ip");
+                }
+                if (res.addr.sin_port != settings.dst_port) {
+                    throw ConnectionError("Incorrent peer port");
+                }
                 return res.new_fd;
             }
         } else {

@@ -27,13 +27,13 @@ public:
     }
 };
 
-class OSSLError : public std::exception {
+class SSLError : public std::exception {
     const char *descr;
     long err;
 
 public:
-    OSSLError(const char * descr, long err) : descr(descr), err(err) {}
-    OSSLError(const char * descr) : descr(descr) {
+    SSLError(const char * descr, long err) : descr(descr), err(err) {}
+    SSLError(const char * descr) : descr(descr) {
         err = ERR_get_error();
     }
 

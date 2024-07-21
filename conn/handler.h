@@ -1,26 +1,25 @@
 #pragma once
 
 #include "../utils/common.h"
-#include "proto.h"
+#include "../crypto/auth.h"
 
 #include <cstdint>
-#include <unordered_map>
 #include <vector>
 
 
 class GlobalChannelHandler {
     public:
     uint32_t max_data_size;
-    void (*on_data)(void *arg, const PeerId_t &src_id, const uint8_t *data, uint32_t size);
-    void (*show_description)(void *arg, const PeerId_t &src_id, std::vector<byte_t> &data);
+    void (*on_data)(void *arg, const PeerId512_t &src_id, const uint8_t *data, uint32_t size);
+    void (*show_description)(void *arg, const PeerId512_t &src_id, std::vector<byte_t> &data);
     void (*destroy)(void *arg);
     void *arg;
 
     GlobalChannelHandler() = default;
     inline GlobalChannelHandler(
         uint32_t max_data_size,
-        void (*on_data)(void *arg, const PeerId_t &src_id, const uint8_t *data, uint32_t size),
-        void (*show_description)(void *arg, const PeerId_t &src_id, std::vector<byte_t> &data),
+        void (*on_data)(void *arg, const PeerId512_t &src_id, const uint8_t *data, uint32_t size),
+        void (*show_description)(void *arg, const PeerId512_t &src_id, std::vector<byte_t> &data),
         void (*destroy)(void *arg), void *arg
     ) : max_data_size(max_data_size), on_data(on_data), show_description(show_description), destroy(destroy), arg(arg) {}
 
@@ -41,7 +40,7 @@ class PeerChannelHandler {
     public:
     uint32_t max_data_size;
     void (*on_data)(void *arg, const uint8_t *data, uint32_t size);
-    void (*show_description)(void *arg, const PeerId_t &src_id, std::vector<byte_t> &data);
+    void (*show_description)(void *arg, const PeerId512_t &src_id, std::vector<byte_t> &data);
     void (*destroy)(void *arg);
     void *arg;
 
@@ -49,7 +48,7 @@ class PeerChannelHandler {
     inline PeerChannelHandler(
         uint32_t max_data_size,
         void (*on_data)(void *arg, const uint8_t *data, uint32_t size),
-        void (*show_description)(void *arg, const PeerId_t &src_id, std::vector<byte_t> &data),
+        void (*show_description)(void *arg, const PeerId512_t &src_id, std::vector<byte_t> &data),
         void (*destroy)(void *arg), void *arg
     ) : max_data_size(max_data_size), on_data(on_data), show_description(show_description), destroy(destroy), arg(arg) {}
 
@@ -67,4 +66,4 @@ class PeerChannelHandler {
 };
 
 void register_global_handler(uint32_t type, GlobalChannelHandler &&handler);
-bool global_handle_data(const PeerId_t &src_id, uint32_t type, const byte_t *data, uint32_t size);
+bool global_handle_data(const PeerId512_t &src_id, uint32_t type, const byte_t *data, uint32_t size);

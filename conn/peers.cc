@@ -2,10 +2,10 @@
 
 #include "../net/exception.h"
 #include "../net/tcpv4.h"
-#include "proto.h"
+#include "../crypto/auth.h"
 
 
-std::unordered_map<PeerId_t, PeerConnection> connected_peers;
+std::unordered_map<PeerId512_t, PeerConnection> connected_peers;
 
 void peer_listen_thread(uint16_t port) {
     SocketGuard s = tcpv4_new_socket();
@@ -23,28 +23,28 @@ void peer_listen_thread(uint16_t port) {
     }
 }
 
-PeerConnection make_peer_punch_tcpv4(
-    SSL_CTX *ctx, PeerId_t peer_id, const TCPv4HolePunchSettings settings
-) {
-    SocketGuard s = tcpv4_hole_punch(settings);
-    SSL_ptr ssl = SSLCreate(ctx, s); // TODO: validate peer id here
+// PeerConnection make_peer_punch_tcpv4(
+//     SSL_CTX *ctx, PeerId512_t peer_id, const TCPv4HolePunchSettings settings
+// ) {
+//     SocketGuard s = tcpv4_hole_punch(settings);
+//     SSL_ptr ssl = SSLCreate(ctx, s); // TODO: validate peer id here
 
-    return {
-        .socket = s.handle(),
-        .conn_type = TCPv4SSL,
-        .src_address = {
-            .ipv4 = {
-                .ip = settings.src_addr,
-                .port = settings.src_port,
-            }
-        },
-        .dst_address = {
-            .ipv4 = {
-                .ip = settings.src_addr,
-                .port = settings.src_port,
-            }
-        },
-        .ssl = std::move(ssl),
-        .peer_id = peer_id,
-    };
-}
+//     return {
+//         .socket = s.handle(),
+//         .conn_type = TCPv4SSL,
+//         .src_address = {
+//             .ipv4 = {
+//                 .ip = settings.src_addr,
+//                 .port = settings.src_port,
+//             }
+//         },
+//         .dst_address = {
+//             .ipv4 = {
+//                 .ip = settings.src_addr,
+//                 .port = settings.src_port,
+//             }
+//         },
+//         .ssl = std::move(ssl),
+//         .peer_id = peer_id,
+//     };
+// }

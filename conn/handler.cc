@@ -14,7 +14,7 @@ void register_global_handler(uint32_t type, GlobalChannelHandler &&handler) {
     }
 }
 
-bool global_handle_data(const PeerId_t &src_id, uint32_t type, const byte_t *data, uint32_t size) {
+bool global_handle_data(const PeerId512_t &src_id, uint32_t type, const byte_t *data, uint32_t size) {
     auto it = global_channel_handlers.find(type);
     if (it == global_channel_handlers.end()) {
         return false;

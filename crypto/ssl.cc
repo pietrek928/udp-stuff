@@ -1,7 +1,6 @@
 #include "ssl.h"
 
 #include "call_check.h"
-#include <openssl/ssl.h>
 
 void SSLInit() {
     scall("initializing ssl library", SSL_library_init());

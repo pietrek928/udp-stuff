@@ -16,8 +16,7 @@ class SocketGuard {
     inline SocketGuard& operator=(const SocketGuard&) = delete;
 
     inline SocketGuard(SocketGuard&& other) {
-        fd = other.fd;
-        other.fd = -1;
+        fd = other.handle();
     }
 
     inline void clear() {
@@ -29,8 +28,7 @@ class SocketGuard {
 
     inline SocketGuard& operator=(SocketGuard&& other) {
         clear();
-        fd = other.fd;
-        other.fd = -1;
+        fd = other.handle();
         return *this;
     }
 
@@ -38,11 +36,11 @@ class SocketGuard {
         return fd;
     }
 
-    inline int get() const {
+    inline socket_t get() const {
         return fd;
     }
 
-    inline int handle() {
+    inline socket_t handle() {
         auto r = fd;
         fd = -1;
         return r;

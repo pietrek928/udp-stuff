@@ -3,10 +3,12 @@
 #include "../utils/common.h"
 #include "../crypto/ssl.h"
 #include "../net/socket.h"
-#include "proto.h"
-#include "handler.h"
 #include "../net/tcpv4.h"
 
+#include "proto.h"
+#include "handler.h"
+
+#include <cstddef>
 #include <unordered_map>
 
 typedef enum {
@@ -33,8 +35,14 @@ class PeerConnection {
 
     SSL_ptr ssl;
 
-    PeerId_t peer_id;
+    PeerId512_t peer_id;
     std::unordered_map<uint32_t, PeerChannelHandler> open_channel_handlers;
+
+    PeerConnection(SocketGuard &&socket, SSL_ptr &&ssl, PeerId512_t peer_id)
+        : socket(std::move(socket)), ssl(std::move(ssl)), peer_id(peer_id) {}
 };
 
-PeerConnection make_peer_punch_tcpv4(SSL_CTX *ctx, PeerId_t peer_id, const TCPv4HolePunchSettings settings);
+/* make peer id from peer's public key */
+PeerId512_t peer_id_from_sha512(const byte_t *data, size_t data_len);
+
+PeerConnection make_peer_punch_tcpv4(SSL_CTX *ctx, PeerId512_t peer_id, const TCPv4HolePunchSettings settings);
