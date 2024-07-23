@@ -12,7 +12,7 @@ typedef struct PeerId512_t {
 #include <functional>
 
 inline bool operator==(const PeerId512_t &id1, const PeerId512_t &id2) {
-    auto data_len = sizeof(id1.id)/sizeof(std::size_t);
+    auto data_len = sizeof(id1.id)/sizeof(size_t);
 
     for (int i=0; i<data_len; i++) {
         if (id1.id[i] != id2.id[i]) {
@@ -25,10 +25,10 @@ inline bool operator==(const PeerId512_t &id1, const PeerId512_t &id2) {
 
 template <>
 struct std::hash<PeerId512_t> {
-  inline std::size_t operator()(const PeerId512_t& k) const {
-    auto data_len = sizeof(k.id)/sizeof(std::size_t);
+  inline size_t operator()(const PeerId512_t& k) const {
+    auto data_len = sizeof(k.id)/sizeof(size_t);
 
-    std::size_t v = 0;
+    size_t v = 0;
     for (int i=0; i<data_len; i++) {
         v += k.id[i];
     }

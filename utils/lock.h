@@ -3,31 +3,14 @@
 #include "common.h"
 #include "assert.h"
 
-template<class Tm, class Targ, bool movable = false>
+template<class Tm, class Targ>
 class ScopeLockArg { // TODO: move only object
     Tm *m;
     Targ arg;
 
-    inline void clear() {
-        if (!movable || likely(m)) {
-            m->unlock_c(arg);
-        }
-    }
-
     public:
-        inline ScopeLockArg(ScopeLockArg &&l)
-            : m(l->m), arg(l->arg) {
-            ASSERT(movable, "Lock is not movable");
-            l->m = NULL;
-        }
-
-        inline void operator=(ScopeLockArg &&l) {
-            ASSERT(movable, "Lock is not movable");
-            clear();
-            m = l->m;
-            arg = l->arg;
-            l->m = NULL;
-        }
+        ScopeLockArg(ScopeLockArg &&l) = delete;
+        inline void operator=(ScopeLockArg &&l) = delete;
 
         inline ScopeLockArg(Tm &_m, Targ arg)
             : m(&_m), arg(arg) {
@@ -39,28 +22,47 @@ class ScopeLockArg { // TODO: move only object
         }
 };
 
-template<class Tm, bool movable = false>
-class ScopeLock { // TODO: move only object
+template<class Tm, class Targ>
+class ScopeLockArgMovable {
     Tm *m;
+    Targ arg;
 
     inline void clear() {
-        if (!movable || likely(m)) {
-            m->unlock_c();
+        if (likely(m)) {
+            m->unlock_c(arg);
         }
     }
 
     public:
-        ScopeLock(ScopeLock &&l) : m(l->m) {
-            ASSERT(movable, "Lock is not movable");
+        inline ScopeLockArgMovable(ScopeLockArgMovable &&l)
+            : m(l->m), arg(l->arg) {
             l->m = NULL;
         }
 
-        inline void operator=(ScopeLock &&l) {
-            ASSERT(movable, "Lock is not movable");
+        inline void operator=(ScopeLockArgMovable &&l) {
             clear();
             m = l->m;
+            arg = l->arg;
             l->m = NULL;
         }
+
+        inline ScopeLockArgMovable(Tm &_m, Targ arg)
+            : m(&_m), arg(arg) {
+            m->lock_c(arg);
+        }
+
+        inline ~ScopeLockArgMovable() {
+            m->unlock_c(arg);
+        }
+};
+
+template<class Tm>
+class ScopeLock {
+    Tm *m;
+
+    public:
+        ScopeLock(ScopeLock &&l) = delete;
+        void operator=(ScopeLock &&l) = delete;
 
         inline ScopeLock(Tm &_m)
             : m(&_m) {
@@ -68,6 +70,37 @@ class ScopeLock { // TODO: move only object
         }
 
         inline ~ScopeLock() {
+            m->unlock_c();
+        }
+};
+
+template<class Tm>
+class ScopeLockMovable {
+    Tm *m;
+
+    inline void clear() {
+        if (likely(m)) {
+            m->unlock_c();
+        }
+    }
+
+    public:
+        ScopeLockMovable(ScopeLockMovable &&l) : m(l->m) {
+            l->m = NULL;
+        }
+
+        inline void operator=(ScopeLockMovable &&l) {
+            clear();
+            m = l->m;
+            l->m = NULL;
+        }
+
+        inline ScopeLockMovable(Tm &_m)
+            : m(&_m) {
+            m->lock_c();
+        }
+
+        inline ~ScopeLockMovable() {
             clear();
         }
 };
@@ -113,11 +146,11 @@ class LockObject {
         syscall(SYS_sched_yield);
     }
 
-    inline auto add_to_futex_waiters(int n) {
+    inline int add_to_futex_waiters(int n) {
         return __sync_add_and_fetch(&num_futex_waiters, n);
     }
 
-    inline auto add_to_brute_waiters(int n) {
+    inline int add_to_brute_waiters(int n) {
 #ifdef COUNT_BRUTE_WAITERS
         return __sync_add_and_fetch(&num_brute_waiters, n);
 #else /* COUNT_BRUTE_WAITERS */
@@ -141,7 +174,7 @@ class LockObject {
         add_to_futex_waiters(-1);
     }
 
-    inline auto atomic_try_lock() {
+    inline int atomic_try_lock() {
         return __sync_bool_compare_and_swap(&_futex_var, 0, 1);
     }
 
@@ -182,7 +215,7 @@ class LockObject {
         lock_c();
     }
 
-    auto notify(int n=1) {
+    int notify(int n=1) {
         if (num_futex_waiters) {
             return futex(FUTEX_WAKE, n, NULL, NULL, 0);
         }
