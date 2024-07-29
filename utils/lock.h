@@ -4,7 +4,7 @@
 
 #include "lock/pthread.h"
 
-typedef LockObjectPthread LockFast;
+typedef LockObjectPthread LockFrequent;
 typedef LockObjectPthread Lock;
 
 #else /* USE_PTHREAD */
@@ -12,7 +12,7 @@ typedef LockObjectPthread Lock;
 #include "lock/simple.h"
 #include "lock/brute.h"
 
-typedef LockObjectBrute<> LockFast;
+typedef LockObjectBrute<> LockFrequent;
 typedef LockObjectSimple Lock;
 
 #endif /* USE_PTHREAD */

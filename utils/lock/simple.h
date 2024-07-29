@@ -86,13 +86,13 @@ class LockObjectSimple {
         return (bool)_futex_var;
     }
 
-    void lock_c() { // TODO: scope object ?
+    inline void lock_c() { // TODO: scope object ?
         if (unlikely(!atomic_try_lock())) {
             __lock_wait();
         }
     }
 
-    void unlock_c() {
+    inline void unlock_c() {
         __sync_lock_release(&_futex_var);
         notify();
     }

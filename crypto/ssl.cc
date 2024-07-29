@@ -1,6 +1,7 @@
 #include "ssl.h"
 
 #include "call_check.h"
+#include <cstddef>
 
 void SSLInit() {
     scall("initializing ssl library", SSL_library_init());
@@ -67,4 +68,16 @@ SSL_ptr SSLCreate(SSL_CTX *ctx, socket_t fd) {
     scall("initializing ssl connection", ssl);
     scall("ssl connection - attaching socket", SSL_set_fd(ssl, fd));
     return ssl;
+}
+
+void SSLReadAllData(SSL *ssl, byte_t *buf, size_t buf_len) {
+    size_t total_read = 0;
+    while (total_read < buf_len) {
+        int read;  // TODO: wait limit ?
+        scall("ssl read", read = SSL_read(ssl, buf + total_read, buf_len - total_read));
+        if (read < 0) {
+            throw SSLError("SSL_read failed");
+        }
+        total_read += read;
+    }
 }

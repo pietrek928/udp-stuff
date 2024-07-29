@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <vector>
 
+// TODO: add some locking here ?
 
 class GlobalChannelHandler {
     public:

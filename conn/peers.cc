@@ -3,7 +3,9 @@
 #include "../net/exception.h"
 #include "../net/tcpv4.h"
 #include "../crypto/auth.h"
+#include "../crypto/ssl.h"
 
+// TODO: peer locking, ssl write lock
 
 std::unordered_map<PeerId512_t, PeerConnection> connected_peers;
 
@@ -48,3 +50,11 @@ void peer_listen_thread(uint16_t port) {
 //         .peer_id = peer_id,
 //     };
 // }
+
+void peer_support_thread(PeerConnection &con) {
+    while (true) {
+        MessageHeader_t header;
+        SSLReadAllData(con.ssl.get(), (byte_t*)(&header), sizeof(MessageHeader_t));
+
+    }
+}

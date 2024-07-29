@@ -13,3 +13,4 @@ SSL_CTX_ptr SSLCreateContext();
 
 void SSLInit();
 SSL_ptr SSLCreate(SSL_CTX *ctx, socket_t fd);
+void SSLReadAllData(SSL *ssl, byte_t *buf, size_t buf_len);
