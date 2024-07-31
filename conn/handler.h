@@ -2,6 +2,7 @@
 
 #include "../utils/common.h"
 #include "../crypto/auth.h"
+#include "exception.h"
 
 #include <cstdint>
 #include <vector>

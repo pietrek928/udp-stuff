@@ -64,8 +64,8 @@ SSL_CTX_ptr SSLCreateContext() {
 }
 
 SSL_ptr SSLCreate(SSL_CTX *ctx, socket_t fd) {
-    SSL_ptr ssl(SSL_new(ctx));
-    scall("initializing ssl connection", ssl);
+    SSL_ptr ssl;
+    scall("initializing ssl connection", ssl = SSL_new(ctx));
     scall("ssl connection - attaching socket", SSL_set_fd(ssl, fd));
     return ssl;
 }
@@ -79,5 +79,17 @@ void SSLReadAllData(SSL *ssl, byte_t *buf, size_t buf_len) {
             throw SSLError("SSL_read failed");
         }
         total_read += read;
+    }
+}
+
+void SSLWriteAllData(SSL *ssl, const byte_t *buf, size_t buf_len) {
+    size_t total_written = 0;
+    while (total_written < buf_len) {
+        int written;
+        scall("ssl write", written = SSL_write(ssl, buf + total_written, buf_len - total_written));
+        if (written <= 0) {
+            throw SSLError("SSL_write failed");
+        }
+        total_written += written;
     }
 }

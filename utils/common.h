@@ -19,6 +19,7 @@ class GuardPointer {
     Tobj *ptr = NULL;
 
     GuardPointer(Tobj *ptr) : ptr(ptr) {}
+    GuardPointer(void *ptr) : ptr((Tobj *)ptr) {}
     GuardPointer() {}
 
     GuardPointer(const GuardPointer&) = delete;
@@ -40,6 +41,14 @@ class GuardPointer {
 
     operator Tobj*() const {
         return ptr;
+    }
+
+    operator void*() const {
+        return ptr;
+    }
+
+    bool is_null() const {
+        return ptr == NULL;
     }
 
     Tobj* get() const {

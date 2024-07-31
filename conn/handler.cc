@@ -1,9 +1,12 @@
 #include "handler.h"
+#include "conn/exception.h"
+#include "utils/common.h"
 
 #include <cstdint>
 #include <stdexcept>
 #include <unordered_map>
 
+// TODO: add some locking here
 
 std::unordered_map<uint32_t, GlobalChannelHandler> global_channel_handlers;
 
@@ -21,8 +24,11 @@ bool global_handle_data(const PeerId512_t &src_id, uint32_t type, const byte_t *
     }
 
     const GlobalChannelHandler &channel_handler = it->second;
-    if (size > channel_handler.max_data_size) {
-        throw std::runtime_error("Data size exceeds max_data_size");
+    if (unlikely(size > channel_handler.max_data_size)) {
+        throw ProtocolError(
+            std::string("Data size ") + std::to_string(size)
+            + " exceeds maximum " + std::to_string(channel_handler.max_data_size)
+        );
     }
     channel_handler.on_data(channel_handler.arg, src_id, data, size);
 

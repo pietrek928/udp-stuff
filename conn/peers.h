@@ -40,6 +40,8 @@ class PeerConnection {
 
     PeerConnection(SocketGuard &&socket, SSL_ptr &&ssl, PeerId512_t peer_id)
         : socket(std::move(socket)), ssl(std::move(ssl)), peer_id(peer_id) {}
+
+    bool handle_data(uint32_t type, const byte_t *data, uint32_t size);
 };
 
 /* make peer id from peer's public key */
