@@ -13,29 +13,16 @@ class GlobalChannelHandler {
     public:
     uint32_t max_data_size;
     void (*on_data)(void *arg, const PeerId512_t &src_id, const uint8_t *data, uint32_t size);
-    void (*show_description)(void *arg, const PeerId512_t &src_id, std::vector<byte_t> &data);
-    void (*destroy)(void *arg);
     void *arg;
+    const char *name;
 
     GlobalChannelHandler() = default;
     inline GlobalChannelHandler(
         uint32_t max_data_size,
         void (*on_data)(void *arg, const PeerId512_t &src_id, const uint8_t *data, uint32_t size),
-        void (*show_description)(void *arg, const PeerId512_t &src_id, std::vector<byte_t> &data),
-        void (*destroy)(void *arg), void *arg
-    ) : max_data_size(max_data_size), on_data(on_data), show_description(show_description), destroy(destroy), arg(arg) {}
-
-    GlobalChannelHandler(const GlobalChannelHandler &other) = delete;
-    GlobalChannelHandler(GlobalChannelHandler &&other) = default;
-
-    GlobalChannelHandler &operator=(const GlobalChannelHandler &other) = delete;
-    GlobalChannelHandler &operator=(GlobalChannelHandler &&other) = default;
-
-    inline ~GlobalChannelHandler() {
-        if (destroy) {
-            destroy(arg);
-        }
-    }
+        void *arg,
+        const char *name
+    ) : max_data_size(max_data_size), on_data(on_data), arg(arg), name(name) {}
 };
 
 class PeerChannelHandler {

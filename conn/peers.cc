@@ -90,7 +90,7 @@ void peer_listen_thread(uint16_t port) {
 //     };
 // }
 
-void peer_support_thread(PeerConnection &con) {
+void peer_handle_thread(PeerConnection &con) {
     while (true) {
         MessageHeader_t header;
         SSLReadAllData(con.ssl.get(), (byte_t*)(&header), sizeof(MessageHeader_t));

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "../assert.h"
-#include "scope.h"
 
 #include <pthread.h>
 
@@ -11,7 +10,6 @@ class LockObjectPthread {
     pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 
     public:
-    using lock_holder_t = ScopeLock<LockObjectPthread>;
 
     // MUST be used inside synchronized block
     void wait() {
@@ -43,7 +41,7 @@ class LockObjectPthread {
         pthread_mutex_unlock(&locker);
     }
 
-    inline lock_holder_t lock() {
-        return lock_holder_t(*this);
-    }
+    // inline lock_holder_t lock() {
+    //     return lock_holder_t(*this);
+    // }
 };

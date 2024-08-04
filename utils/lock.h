@@ -16,3 +16,5 @@ typedef LockObjectBrute<> LockFrequent;
 typedef LockObjectSimple Lock;
 
 #endif /* USE_PTHREAD */
+
+#include "lock/scope.h"
