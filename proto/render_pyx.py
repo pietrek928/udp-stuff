@@ -1,6 +1,10 @@
 from enum import Enum
 from inspect import getdoc
-from .descr import ArrayField, BoolField, EnumField, FieldDescr, FloatField, IntField, StringField, StructDescr, StructField, UintField, get_enum_int_mapping
+from .descr import (
+    ArrayField, BoolField, EnumField, FieldDescr,
+    FloatField, IntField, StringField, StructDescr,
+    StructField, UintField, get_enum_int_mapping
+)
 
 
 def get_type_name(field: FieldDescr):

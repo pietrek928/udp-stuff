@@ -1,6 +1,10 @@
 from enum import Enum
 from inspect import getdoc
-from .descr import ArrayField, BoolField, EnumField, FieldDescr, FloatField, IntField, StringField, StructDescr, StructField, UintField, get_enum_int_mapping
+from .descr import (
+    ArrayField, BoolField, EnumField, FieldDescr,
+    FloatField, IntField, StringField, StructDescr,
+    StructField, UintField, UnionField, get_enum_int_mapping
+)
 
 
 # TODO: sort structs by dependencies
@@ -11,7 +15,9 @@ from .descr import ArrayField, BoolField, EnumField, FieldDescr, FloatField, Int
 #
 
 def get_type_name(field: FieldDescr):
-    if isinstance(field, UintField):
+    if isinstance(field, EnumField):
+        return field.enum.__name__
+    elif isinstance(field, UintField):
         if field.bits <= 8:
             return "uint8_t"
         elif field.bits <= 16:
@@ -50,8 +56,11 @@ def get_type_name(field: FieldDescr):
         return f"std::vector<{get_type_name(field.item)}>"
     elif isinstance(field, StructField):
         return f"{field.struct.name}"
-    elif isinstance(field, EnumField):
-        return field.enum.__name__
+    elif isinstance(field, UnionField):
+        return "union {\n" + '\n'.join(
+            f'    {get_type_name(struct)} {struct.name}_variant;'
+            for struct in field.structs
+        ) + "\n}"
     else:
         raise ValueError(f"Unsupported field type: {field}")
 
@@ -111,6 +120,39 @@ def render_parse_struct_field(struct: StructField, reader, result):
         yield f"parse_{struct.struct.name}(reader, {result}.{struct.name});"
 
 
+def render_parse_union_field(union: UnionField, reader, result):
+    type_type = get_type_name(union.type_field)
+    yield "{"
+    yield f"    {type_type} type;"
+    yield f"    {reader}.read_uint({union.type_field.bits}, &type);"
+    if union.length is not None:
+        length_type = get_type_name(union.length)
+        yield f"    {length_type} length;"
+        yield f"    {reader}.read_uint({union.length.bits}, &length);"
+        yield f"    auto struct_reader = reader.read_fragment(length);"
+        yield f"    try {{"
+        yield f"        switch (type) {{"
+        for n, struct in enumerate(union.structs):
+            yield f"        case {n}:"
+            yield f"            parse_{struct.name}(struct_reader, {result}.{struct.name}_variant);"
+            yield f"            break;"
+        yield "        default:"
+        yield "            throw std::runtime_error(\"Unknown union type\");"
+        yield "        }"
+        yield f"    }} catch (BitStreamFinished &e) {{"
+        yield f"    }}"
+    else:
+        yield f"    switch (type) {{"
+        for n, struct in enumerate(union.structs):
+            yield f"    case {n}: {{"
+            yield f"       parse_{struct.name}(reader, {result}.{struct.name}_variant);"
+            yield "        break;"
+        yield "    default:"
+        yield "        throw std::runtime_error(\"Unknown union type\");"
+        yield "    }"
+    yield "}"
+
+
 def render_parse_field(field: FieldDescr, reader, result):
     if field.default is not None:
         yield f"if (read_field_flag({reader})) {{"
@@ -131,6 +173,8 @@ def render_parse_field(field: FieldDescr, reader, result):
         yield from render_parse_array(field, reader, result)
     elif isinstance(field, StructField):
         yield from render_parse_struct_field(field, reader, result)
+    elif isinstance(field, UnionField):
+        yield from render_parse_union_field(field, reader, result)
     else:
         raise ValueError(f"Unsupported field type: {field}")
 
@@ -172,6 +216,26 @@ def render_write_struct_field(struct: StructField, writer, value):
         yield f"write_{struct.struct.name}(writer, {value}.{struct.name});"
 
 
+def render_write_union_field(union: UnionField, writer, value):
+    yield "{"
+    yield f"    {writer}.write_uint({union.type_field.bits}, 0);"
+    if union.length is not None:
+        yield f"    {writer}.write_uint({union.length.bits}, 0);"
+        yield f"    auto struct_pos = {writer}.get_bit_pos();"
+    yield f"    switch ({value}.{union.type_field.name}) {{"
+    for n, struct in enumerate(union.structs):
+        yield f"    case {n}:"
+        yield f"        write_{struct.name}(writer, {value}.{struct.name}_variant);"
+        yield f"        break;"
+    yield "    default:"
+    yield "        throw std::runtime_error(\"Unknown union type\");"
+    yield "    }"
+    if union.length is not None:
+        yield f"    auto struct_length = {writer}.get_bit_pos() - struct_pos;"
+        yield f"    {writer}.write_uint_at(struct_pos - {union.length.bits}, {union.length.bits}, struct_length);"
+    yield "}"
+
+
 def render_write_field(field: FieldDescr, writer, value):
     if field.default is not None:
         yield f"if ({value} != {field.default}) {{"
@@ -192,6 +256,8 @@ def render_write_field(field: FieldDescr, writer, value):
         yield from render_write_array(field, writer, value)
     elif isinstance(field, StructField):
         yield from render_write_struct_field(field, writer, value)
+    elif isinstance(field, UnionField):
+        yield from render_write_union_field(field, writer, value)
     else:
         raise ValueError(f"Unsupported field type: {field}")
 
