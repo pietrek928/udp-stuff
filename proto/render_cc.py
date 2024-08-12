@@ -6,6 +6,9 @@ from .descr import ArrayField, BoolField, EnumField, FieldDescr, FloatField, Int
 # TODO: sort structs by dependencies
 # TODO: sort fields by size ?
 
+#
+# Render struct definitions
+#
 
 def get_type_name(field: FieldDescr):
     if isinstance(field, UintField):
@@ -76,6 +79,10 @@ def render_enum(enum: Enum):
         )
 
 
+#
+# Read functions
+#
+
 def render_parse_array(array: ArrayField, reader, result):
     size_type = get_type_name(array.size)
     yield "{"
@@ -88,19 +95,26 @@ def render_parse_array(array: ArrayField, reader, result):
     yield "}"
 
 
-def render_parse_struct(struct: StructField, reader, result):
-    if struct.length:
+def render_parse_struct_field(struct: StructField, reader, result):
+    if struct.length is not None:
         length_type = get_type_name(struct.length)
         yield "{"
         yield f"    {length_type} length;"
         yield f"    {reader}.read_uint({struct.length.bits}, &length);"
-        yield f"    parse_{struct.struct.name}(reader.read_fragment(length), {result}.{struct.name});"
+        yield f"    auto struct_reader = reader.read_fragment(length);"
+        yield f"    try {{"
+        yield f"        parse_{struct.struct.name}(struct_reader, {result}.{struct.name});"
+        yield f"    }} catch (BitStreamFinished &e) {{"
+        yield f"    }}"
         yield "}"
     else:
-        yield f"parse_{struct.struct.name}(reader, &{result}.{struct.name});"
+        yield f"parse_{struct.struct.name}(reader, {result}.{struct.name});"
 
 
 def render_parse_field(field: FieldDescr, reader, result):
+    if field.default is not None:
+        yield f"if (read_field_flag({reader})) {{"
+
     if isinstance(field, EnumField):
         yield f"    read_enum_field(reader, &{result}, {field.bits});"
     elif isinstance(field, UintField):
@@ -116,7 +130,12 @@ def render_parse_field(field: FieldDescr, reader, result):
     elif isinstance(field, ArrayField):
         yield from render_parse_array(field, reader, result)
     elif isinstance(field, StructField):
-        yield from render_parse_struct(field, reader, result)
+        yield from render_parse_struct_field(field, reader, result)
+    else:
+        raise ValueError(f"Unsupported field type: {field}")
+
+    if field.default is not None:
+        yield "}"
 
 
 def render_parse_struct(struct: StructDescr):
@@ -124,4 +143,65 @@ def render_parse_struct(struct: StructDescr):
     yield f"void parse_{struct.name}(Treader &reader, {struct.name} &result) {{"
     for field in struct.fields:
         yield from render_parse_field(field, "reader", f"result.{field.name}")
+    yield "}"
+
+
+#
+# Write functions
+#
+
+def render_write_array(array: ArrayField, writer, value):
+    yield "{"
+    yield f"    {writer}.write_uint({array.size.bits}, {value}.size());"
+    yield f"    for (const auto &vec_item : {value}) {{"
+    yield from render_write_field(array.item, writer, "vec_item")
+    yield "    }"
+    yield "}"
+
+
+def render_write_struct_field(struct: StructField, writer, value):
+    if struct.length is not None:
+        yield "{"
+        yield f"    {writer}.write_uint({struct.length.bits}, 0);"
+        yield f"    auto struct_pos = {writer}.get_bit_pos();"
+        yield f"    write_{struct.struct.name}(writer, {value}.{struct.name});"
+        yield f"    auto length = {writer}.get_bit_pos() - struct_pos;"
+        yield f"    {writer}.write_uint_at(struct_pos - {struct.length.bits}, {struct.length.bits}, length);"
+        yield "}"
+    else:
+        yield f"write_{struct.struct.name}(writer, {value}.{struct.name});"
+
+
+def render_write_field(field: FieldDescr, writer, value):
+    if field.default is not None:
+        yield f"if ({value} != {field.default}) {{"
+
+    if isinstance(field, EnumField):
+        yield f"    write_enum_field(writer, {value}, {field.bits});"
+    elif isinstance(field, UintField):
+        yield f"    {writer}.write_uint({field.bits}, {value});"
+    elif isinstance(field, IntField):
+        yield f"    {writer}.write_int({field.bits}, {value});"
+    elif isinstance(field, FloatField):
+        yield f"    {writer}.write_float({field.bits}, {value});"
+    elif isinstance(field, BoolField):
+        yield f"    {writer}.write_bool({value});"
+    elif isinstance(field, StringField):
+        yield f"    write_string_field(writer, {value}, {field.size.bits});"
+    elif isinstance(field, ArrayField):
+        yield from render_write_array(field, writer, value)
+    elif isinstance(field, StructField):
+        yield from render_write_struct_field(field, writer, value)
+    else:
+        raise ValueError(f"Unsupported field type: {field}")
+
+    if field.default is not None:
+        yield "}"
+
+
+def render_write_struct(struct: StructDescr):
+    yield f"template<class Twriter>"
+    yield f"void write_{struct.name}(Twriter &writer, const {struct.name} &value) {{"
+    for field in struct.fields:
+        yield from render_write_field(field, "writer", f"value.{field.name}")
     yield "}"
