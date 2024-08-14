@@ -77,20 +77,31 @@ class StructField(FieldDescr):
         super().__init__(**kwargs)
 
 
-class UnionField(FieldDescr):
+class UnionDescr(BaseModel):
+    name: str
+    description: Optional[str] = None
     structs: Tuple[StructDescr, ...]
+    allow_empty: bool = False
+
+
+class UnionField(FieldDescr):
+    union: UnionDescr
     type_field: UintField
-    # to be able to append fields to struct in same proto version, use length field
+    # to be able to append fields to structs in same proto version, use length field
     length: Optional[UintField] = None
 
-    def __init__(self, type_bits: Optional[int] = None, length_bits: Optional[int] = None, **kwargs):
+    def __init__(self, union: UnionDescr, type_bits: Optional[int] = None, length_bits: Optional[int] = None, **kwargs):
         if kwargs.get('type_field') is None:
             if type_bits is None:
-                type_bits = ceil(log2(len(kwargs['structs'])))
+                nvariants = len(union.structs) + int(union.allow_empty)
+                type_bits = ceil(log2(nvariants))
             kwargs['type_field'] = UintField(name="type", bits=type_bits)
         if length_bits is not None:
             kwargs['length'] = UintField(name="length", bits=length_bits)
-        super().__init__(**kwargs)
+        super().__init__(
+            union=union,
+            **kwargs
+        )
 
 
 def get_enum_int_mapping(enum: Type[Enum]):

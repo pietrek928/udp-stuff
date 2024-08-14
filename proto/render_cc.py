@@ -3,7 +3,7 @@ from inspect import getdoc
 from .descr import (
     ArrayField, BoolField, EnumField, FieldDescr,
     FloatField, IntField, StringField, StructDescr,
-    StructField, UintField, UnionField, get_enum_int_mapping
+    StructField, UintField, UnionDescr, UnionField, get_enum_int_mapping
 )
 
 
@@ -57,10 +57,7 @@ def get_type_name(field: FieldDescr):
     elif isinstance(field, StructField):
         return f"{field.struct.name}"
     elif isinstance(field, UnionField):
-        return "union {\n" + '\n'.join(
-            f'    {get_type_name(struct)} {struct.name}_variant;'
-            for struct in field.structs
-        ) + "\n}"
+        return f"{field.union.name}"
     else:
         raise ValueError(f"Unsupported field type: {field}")
 
@@ -72,6 +69,8 @@ def render_struct(struct: StructDescr):
     for field in struct.fields:
         if field.description:
             yield f"    /* {field.description} */"
+        if isinstance(field, UnionField):
+            yield f"    {field.union.name}_type {field.name}_type;"
         yield f"    {get_type_name(field)} {field.name};"
     yield f"}} {struct.name};"
 
@@ -86,6 +85,27 @@ def render_enum(enum: Enum):
         yield f"    {name} = {value}," + (
             f" /* {description} */" if description else ""
         )
+    yield f"}} {enum.__name__};"
+
+
+def render_union(union: UnionDescr):
+    yield f"typedef union {union.name} {{"
+    for struct in union.structs:
+        yield f"    {struct.name} {struct.name}_variant;"
+    yield f"}} {union.name};"
+
+
+def render_union_enum(union: UnionField):
+    yield f"typedef enum {union.name}_type {{"
+    if union.allow_empty:
+        yield f"    {union.name}_empty = 0,"
+        n = 1
+    else:
+        n = 0
+    for struct in union.structs:
+        yield f"    {struct.name} = {n},"
+        n += 1
+    yield f"}} {union.name}_type;"
 
 
 #
@@ -127,26 +147,38 @@ def render_parse_union_field(union: UnionField, reader, result):
     yield f"    {reader}.read_uint({union.type_field.bits}, &type);"
     if union.length is not None:
         length_type = get_type_name(union.length)
+        if union.union.allow_empty:
+            yield f"    if (type != 0) {{"
         yield f"    {length_type} length;"
         yield f"    {reader}.read_uint({union.length.bits}, &length);"
         yield f"    auto struct_reader = reader.read_fragment(length);"
         yield f"    try {{"
         yield f"        switch (type) {{"
-        for n, struct in enumerate(union.structs):
+        n = 1
+        for struct in union.union.structs:
             yield f"        case {n}:"
             yield f"            parse_{struct.name}(struct_reader, {result}.{struct.name}_variant);"
             yield f"            break;"
+            n += 1
         yield "        default:"
         yield "            throw std::runtime_error(\"Unknown union type\");"
         yield "        }"
         yield f"    }} catch (BitStreamFinished &e) {{"
         yield f"    }}"
+        if union.union.allow_empty:
+            yield "    }"
     else:
+        n = 0
         yield f"    switch (type) {{"
-        for n, struct in enumerate(union.structs):
+        if union.union.allow_empty:
+            yield f"    case {n}:"
+            yield f"        break;"
+            n += 1
+        for struct in union.union.structs:
             yield f"    case {n}: {{"
             yield f"       parse_{struct.name}(reader, {result}.{struct.name}_variant);"
             yield "        break;"
+            n += 1
         yield "    default:"
         yield "        throw std::runtime_error(\"Unknown union type\");"
         yield "    }"
@@ -218,7 +250,9 @@ def render_write_struct_field(struct: StructField, writer, value):
 
 def render_write_union_field(union: UnionField, writer, value):
     yield "{"
-    yield f"    {writer}.write_uint({union.type_field.bits}, 0);"
+    yield f"    {writer}.write_uint({union.type_field.bits}, {value}_type);"
+    if union.union.allow_empty:
+        yield f"    if ({value}_type != 0) {{"
     if union.length is not None:
         yield f"    {writer}.write_uint({union.length.bits}, 0);"
         yield f"    auto struct_pos = {writer}.get_bit_pos();"
@@ -233,6 +267,8 @@ def render_write_union_field(union: UnionField, writer, value):
     if union.length is not None:
         yield f"    auto struct_length = {writer}.get_bit_pos() - struct_pos;"
         yield f"    {writer}.write_uint_at(struct_pos - {union.length.bits}, {union.length.bits}, struct_length);"
+    if union.union.allow_empty:
+        yield "    }"
     yield "}"
 
 
