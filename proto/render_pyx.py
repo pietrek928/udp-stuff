@@ -71,7 +71,7 @@ def redner_union2pydantic(union: UnionDescr):
         yield f"    {'el' if (i == 0 and union.allow_empty) else ''}if t == {union.name}_type.{struct.name}:"
         yield f"        return pstruct.{union.name}({struct.name}=convert_{struct.name}2pydantic(u.{struct.name}_variant))"
     yield f"    else:"
-    yield f"        raise ValueError(f'Invalid union type {t}')"
+    yield f"        raise ValueError(f'Invalid union type {{t}}')"
 
 
 def render_struct2pydantic(struct: StructDescr):
