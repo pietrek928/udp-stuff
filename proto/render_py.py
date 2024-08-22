@@ -4,7 +4,7 @@ from inspect import getdoc
 from .descr import (
     ArrayField, BoolField, EnumField, FieldDescr,
     FloatField, IntField, StringField, StructDescr,
-    StructField, UintField, UnionField, get_enum_int_mapping
+    StructField, UintField, UnionDescr, UnionField, get_enum_int_mapping
 )
 
 
@@ -21,26 +21,12 @@ def get_type_name(field: FieldDescr):
         return field.enum.__name__
     elif isinstance(field, ArrayField):
         return f"vector[{get_type_name(field.item)}]"
+    elif isinstance(field, UnionField):
+        return f"{field.union.name}"
     elif isinstance(field, StructField):
         return f"{field.struct.name}"
     else:
         raise ValueError(f"Unsupported field type: {field}")
-
-
-def render_cdef_union(union: UnionField, parent_name: str):
-    yield f"cdef union {parent_name}_{union.name}:"
-    for struct in union.structs:
-        yield f"    {struct.name} {struct.name}"
-
-
-def render_ctypedef_struct(struct: StructDescr):
-    yield f"ctypedef struct {struct.name}:"
-    for field in struct.fields:
-        if isinstance(field, UnionField):
-            yield f"    int {field.name}_type"
-            yield f"    {struct.name}_{field.name} {field.name}"
-        else:
-            yield f"    {get_type_name(field)} {field.name}"
 
 
 def render_enum(enum: Enum):
@@ -69,10 +55,11 @@ def render_num2enum_mapping(enum: Enum):
     yield "}"
 
 
-def render_union_class(union: UnionField, parent_name: str):
-    yield f"class {parent_name}_{union.name}(UnionModel):"
+def render_union_class(union: UnionDescr):
+    yield f"class {union.name}(UnionModel):"
     if union.description:
         yield f'    """{union.description}"""'
+    yield f"    _allow_empty = {union.allow_empty}"
     for struct in union.structs:
         yield f"    {struct.name}: Optional[{struct.name}] = None"
 
