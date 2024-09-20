@@ -77,6 +77,9 @@ def validate_union(
     if match_length:
         if len(u1.structs) != len(u2.structs):
             raise ValueError(f"Union struct count mismatch: {path} {len(u1.structs)} != {len(u2.structs)}")
+    else:
+        if len(u1.structs) > len(u2.structs):
+            raise ValueError(f"You cannot remove from union in same proto version: {path} {len(u1.structs)} > {len(u2.structs)}")
     for s1, s2 in zip(u1.structs, u2.structs):
         validate_struct(s1, s2, path + (s1.name,), match_length=match_length)
 

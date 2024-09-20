@@ -22,7 +22,7 @@ class BitBufferReader {
         To r = 0;
         while (n > 0) {
             if (n <= cur_item_bits) {
-                r = (r << n) | (cur_item & ((Tn(1) << n) - 1));
+                r = (r << n) | (cur_item & ((Tn(1) << (n+1)) - 1));
                 cur_item >>= n;
                 cur_item_bits -= n;
                 return r;
@@ -55,7 +55,15 @@ class BitBufferReader {
                 cur_item_bits = bit_size > elem_bit_size() ? elem_bit_size() : bit_size;
             }
         }
-    
+
+    BitBufferReader(const Tn *buf, size_t bit_size_, int bit_shift)
+        : buf(buf), bit_size(bit_size_ + bit_shift) {
+            if (bit_size > 0) {
+                cur_item = buf[items_read++] >> bit_shift;
+                cur_item_bits = (bit_size > elem_bit_size() ? elem_bit_size() : bit_size) - bit_shift;
+            }
+        }
+
     template<class To>
     void read_uint(int bit_length, To *v) {
         *v = read_bits<To>(bit_length);
@@ -65,14 +73,8 @@ class BitBufferReader {
         return items_read * elem_bit_size() + cur_item_bits;
     }
 
-    template<class Tv>
-    void write_uint_at(size_t bit_pos, int bit_size, Tn v) {
-        //
-    }
-
     void read_fragment(size_t bit_size) {
-        // !!!!!!!!!
-        return BitBufferReader(buf + items_read, bit_size);
+        return BitBufferReader(buf + items_read, bit_size, cur_item_bits);
     }
 
     ~BitBufferReader() {
