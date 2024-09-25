@@ -1,3 +1,4 @@
+#include <cstddef>
 #include <vector>
 
 
@@ -11,6 +12,18 @@ class BitBufferWriter {
         return sizeof(Tn) * 8;
     }
 
+    inline void put(Tn v) {
+        out.push_back(v);
+    }
+
+    inline void set(std::size_t pos, Tn v) {
+        out[pos] = v;
+    }
+
+    inline Tn get(std::size_t pos) {
+        return out[pos];
+    }
+
     public:
 
     std::size_t get_bit_pos() {
@@ -19,29 +32,33 @@ class BitBufferWriter {
 
     template<class Ti>
     void write_uint(Ti v, int n) {
-        while (n > 0) {
-            if (n <= elem_bit_size() - bits_out) {
-                out_v = (out_v << n) | v;
-                bits_out -= n;
-                return;
-            } else {
-                int b = elem_bit_size() - bits_out;
-                out_v = (out_v << b) | (v & ((Ti(1) << (b+1)) - 1));
-                v >>= b;
-                n -= b;
-
-                out.push_back(out_v);
-                bits_out = 0;
-            }
+        if (n <= elem_bit_size() - bits_out) {
+            out_v |= v << bits_out;
+            bits_out -= n;
+            return;
         }
+        int b = elem_bit_size() - bits_out;
+        out_v |= v << bits_out;
+        v >>= b;
+        n -= b;
+        put(out_v);
+        bits_out = 0;
+        out_v = 0;
+        while (n > elem_bit_size()) {
+            put(v);
+            v >>= elem_bit_size();
+            n -= elem_bit_size();
+        }
+        out_v = v;
+        bits_out = n;
     }
 
     template<class Ti>
     void write_uint_at(std::size_t bit_pos, Ti v, int n) {
         std::size_t item_pos = bit_pos / elem_bit_size();
         int bits = bit_pos % elem_bit_size();
-        while (n > 0) {
-            //
+        if (n < elem_bit_size() - bits) {
+            out[item_pos] = | ();
         }
     }
 
