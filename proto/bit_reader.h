@@ -17,32 +17,38 @@ class BitBufferReader {
         return sizeof(Tn) * 8;
     }
 
+    inline void read_item() {
+        auto bits_read = items_read * elem_bit_size();
+        if (bits_read >= bit_size) {
+            throw BitStreamFinished();
+        }
+        cur_item = buf[items_read++];
+        if (bits_read + elem_bit_size() <= bit_size) {
+            cur_item_bits = elem_bit_size();
+        } else {
+            cur_item_bits = bit_size - bits_read;
+        }
+    }
+
     template<class To>
     To read_bits(int n) {
-        To r = 0;
-        while (n > 0) {
-            if (n <= cur_item_bits) {
-                r = (r << n) | (cur_item & ((Tn(1) << (n+1)) - 1));
-                cur_item >>= n;
-                cur_item_bits -= n;
-                return r;
-            } else {
-                r = (r << cur_item_bits) | cur_item;
-                n -= cur_item_bits;
-
-                auto bits_read = items_read * elem_bit_size();
-                if (bits_read < bit_size) {
-                    cur_item = buf[items_read++];
-                    if (bits_read + elem_bit_size() <= bit_size) {
-                        cur_item_bits = elem_bit_size();
-                    } else {
-                        cur_item_bits = bit_size - bits_read;
-                    }
-                } else {
-                    throw BitStreamFinished();
-                }
-            }
+        if (n <= cur_item_bits) {
+            To r = cur_item & ((Tn(1) << (n+1)) - 1);
+            cur_item >>= n;
+            cur_item_bits -= n;
+            return r;
         }
+        To r = cur_item;
+        n -= cur_item_bits;
+        read_item();
+        while (n > cur_item_bits) {
+            r = (r << cur_item_bits) | cur_item;
+            n -= cur_item_bits;
+            read_item();
+        }
+        r = (r << n) | cur_item & ((Tn(1) << n+1) - 1);
+        cur_item >>= n;
+        cur_item_bits -= n;
         return r;
     }
 

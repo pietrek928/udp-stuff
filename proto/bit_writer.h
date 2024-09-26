@@ -34,7 +34,7 @@ class BitBufferWriter {
     void write_uint(Ti v, int n) {
         if (n <= elem_bit_size() - bits_out) {
             out_v |= v << bits_out;
-            bits_out -= n;
+            bits_out += n;
             return;
         }
         int b = elem_bit_size() - bits_out;
@@ -58,8 +58,19 @@ class BitBufferWriter {
         std::size_t item_pos = bit_pos / elem_bit_size();
         int bits = bit_pos % elem_bit_size();
         if (n < elem_bit_size() - bits) {
-            out[item_pos] = | ();
+            set(item_pos, get(item_pos) & ~(((Tn(1) << n) - 1)) << bits | (v << bits));
+            return;
         }
+        int b = elem_bit_size() - bits;
+        set(item_pos++, get(item_pos) & ~(Tn(-1) << bits) | (v << bits));
+        v >>= b;
+        n -= b;
+        while (n > elem_bit_size()) {
+            set(item_pos++, v);
+            v >>= elem_bit_size();
+            n -= elem_bit_size();
+        }
+        set(item_pos, get(item_pos) & ~((Tn(1) << n) - 1) | v);
     }
 
     std::vector<Tn> &&pick_data() {
