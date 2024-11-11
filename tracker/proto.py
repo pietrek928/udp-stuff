@@ -1,4 +1,5 @@
 from proto.descr import StructDescr, UintField, UnionDescr, UnionField
+from proto.render_all import render_proto
 
 register = StructDescr(
     name='register',
@@ -22,3 +23,5 @@ tracker_frame = StructDescr(
         )
     ]
 )
+
+render_proto((tracker_frame, ), 'proto')

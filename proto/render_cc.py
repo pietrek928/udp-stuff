@@ -366,3 +366,11 @@ def render_write_struct(struct: StructDescr):
         yield from render_write_field(field, "writer", f"value.{field.name}")
     yield IdentEnd
     yield "}"
+
+
+def render_header_begin():
+    yield "#pragma once"
+    yield ""
+    yield "#include <cstdint>"
+    yield "#include <string>"
+    yield "#include <vector>"

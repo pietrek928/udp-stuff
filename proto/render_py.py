@@ -72,3 +72,7 @@ def render_struct(struct: StructDescr):
         yield f"    {field.name}: {get_type_name(field)}" + (
             f"  # {field.description}" if field.description else ""
         )
+
+def render_imports():
+    yield 'from enum import Enum'
+    yield 'from pydantic import BaseModel'
