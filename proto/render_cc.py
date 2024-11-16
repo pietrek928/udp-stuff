@@ -121,12 +121,15 @@ def render_union_enum(union: UnionField):
 #
 
 def render_parse_array(array: ArrayField, reader, result):
-    size_type = get_type_name(array.size)
     yield "{"
     yield IdentStart
-    yield f"{size_type} size;"
-    yield f"{reader}.read_uint({array.size.bits}, &size);"
-    yield f"{result}.resize(size);"
+    if array.const_size is not None:
+        yield f"{result}.resize({array.const_size});"
+    else:
+        size_type = get_type_name(array.size)
+        yield f"{size_type} size;"
+        yield f"{reader}.read_uint({array.size.bits}, &size);"
+        yield f"{result}.resize(size);"
     yield f"for (auto &vec_item : {result}) {{"
     yield IdentStart
     yield from render_parse_field(array.item, reader, "vec_item")

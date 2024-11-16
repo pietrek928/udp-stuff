@@ -32,8 +32,9 @@ class StringField(FieldDescr):
     size: UintField
 
     def __init__(self, size_bits: int = 16, **kwargs):
+        if 'size' not in kwargs:
+            kwargs['size'] = UintField(name="size", bits=size_bits)
         super().__init__(**kwargs)
-        self.size = UintField(name="size", bits=size_bits)
 
 
 class EnumField(UintField):
@@ -54,18 +55,25 @@ class EnumField(UintField):
 
 class ArrayField(FieldDescr):
     item: FieldDescr
-    size: UintField
+    size: Optional[UintField] = None
+    const_size: Optional[int] = None
 
-    def __init__(self, size_bits: Optional[int] = 16, **kwargs):
-        if size_bits is not None:
+    def __init__(
+        self,
+        size_bits: Optional[int] = 16,
+        const_size: Optional[int] = None,
+        **kwargs
+    ):
+        if size_bits is not None and const_size is None:
             kwargs['size'] = UintField(name="size", bits=size_bits)
-        super().__init__(**kwargs)
+        super().__init__(const_size=const_size, **kwargs)
+        assert self.size is not None or self.const_size is not None
 
 
 class StructDescr(BaseModel):
     name: str
     description: Optional[str] = None
-    fields: Tuple[FieldDescr]
+    fields: Tuple[FieldDescr, ...]
 
 
 class StructField(FieldDescr):

@@ -16,6 +16,9 @@ class FileOutput:
         self.f.__enter__(*a, **k)
         return self
 
+    def __exit__(self, *a, **k):
+        return self.f.__exit__(*a, **k)
+
     def put(self, items: Iterable):
         for item in items:
             if item is IdentStart:
@@ -109,16 +112,18 @@ def render_proto(
     head_descrs: Iterable[Union[StructDescr, UnionDescr]],
     out_prefix: str
 ):
-    makedirs(path.dirname(out_prefix), exist_ok=True)
+    out_dir = path.dirname(out_prefix)
+    if out_dir:
+        makedirs(out_dir, exist_ok=True)
     head_descrs = tuple(head_descrs)
     validate_duplicates(head_descrs)
     entries_cnt = count_entries(head_descrs)
     ordered_objs = order_descrs(head_descrs, entries_cnt)
 
     with (
-        FileOutput(open(f'{out_prefix}.h')) as h_out,
-        FileOutput(open(f'{out_prefix}.py')) as py_out,
-        FileOutput(open(f'{out_prefix}.pyx')) as pyx_out,
+        FileOutput(open(f'{out_prefix}.h', 'w')) as h_out,
+        FileOutput(open(f'{out_prefix}.py', 'w')) as py_out,
+        FileOutput(open(f'{out_prefix}.pyx', 'w')) as pyx_out,
     ):
         h_out.put(render_cc.render_header_begin())
         py_out.put(render_py.render_imports())
