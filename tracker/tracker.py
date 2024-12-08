@@ -2,8 +2,15 @@ from proto.descr import ArrayField, FloatField, StringField, StructDescr, Struct
 from proto.render_all import render_proto
 
 
-RegisterStruct = StructDescr(
-    name='register',
+def peer_id_field(name='id', default=None):
+    return ArrayField(
+        name=name, item=UintField(name='byte', bits=8),
+        const_size=512 // 8, default=default
+    )
+
+
+RegisterPeerStruct = StructDescr(
+    name='register_peer',
     fields=[
         # TODO: services here ?
         UintField(name='ipv4', bits=32, default=0),
@@ -15,7 +22,7 @@ RegisterStruct = StructDescr(
 ConnectMessageStruct = StructDescr(
     name='connect_request',
     fields=[
-        ArrayField(name='id', item=UintField(name='byte', bits=8), const_size=512 // 8),
+        peer_id_field(),
         ArrayField(name='cert', item=UintField(name='byte', bits=8), size_bits=24, default=[]),  # ???
         UintField(name='ipv4', bits=32, default=0),
         UintField(name='ipv4_port', bits=16),
@@ -35,7 +42,7 @@ PeerStat = StructDescr(
 PutStats = StructDescr(
     name='put_stats',
     fields=[
-        ArrayField(name='id', item=UintField(name='byte', bits=8), const_size=512 // 8, default=[]),
+        peer_id_field(default=[]),
         UintField(name='timestamp', bits=64),
         ArrayField(name='stats', item=StructField(name='stat', struct=PeerStat)),
     ]
@@ -44,7 +51,7 @@ PutStats = StructDescr(
 PeerInfo = StructDescr(
     name='peer_info',
     fields=[
-        ArrayField(name='id', item=UintField(name='byte', bits=8), const_size=512 // 8),
+        peer_id_field(),
         ArrayField(name='cert', item=UintField(name='byte', bits=8), size_bits=24, default=[]),
         StringField(name='description'),
         ArrayField(name='services', item=StringField(name='service')),
@@ -52,21 +59,43 @@ PeerInfo = StructDescr(
     ]
 )
 
+PeerInfos = StructDescr(
+    name='peer_infos',
+    fields=[
+        ArrayField(
+            name='peers',
+            item=StructField(name='peer', struct=PeerInfo),
+        ),
+    ]
+)
+
+PeerSearchResult = StructDescr(
+    name='peer_search_result',
+    fields=[
+        ArrayField(
+            name='peer_ids',
+            item=peer_id_field(),
+        ),
+    ]
+)
+
 TrackerUnion = UnionDescr(
     name='tracker_union',
     structs=[
-        RegisterStruct,
+        RegisterPeerStruct,
         ConnectMessageStruct,
         PutStats,
         PeerInfo,
+        PeerInfos,
+        PeerSearchResult,
     ]
 )
 
 tracker_frame = StructDescr(
-    name='tracker',
+    name='tracker_frame',
     fields=[
         UnionField(
-            name='tracker',
+            name='tracker_frame_union',
             union=TrackerUnion
         )
     ]

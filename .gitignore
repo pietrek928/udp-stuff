@@ -10,3 +10,7 @@ CMakeFiles
 **/*.e
 **/*.s
 **/*.o
+
+# Python files
+**/__pycache__
+

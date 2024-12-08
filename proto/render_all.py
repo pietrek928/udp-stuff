@@ -46,14 +46,14 @@ def get_children(o: DescrObjType):
             if isinstance(f, StructField):
                 yield f.struct
             elif isinstance(f, UnionField):
-                yield f.union
+                yield f
             elif isinstance(f, EnumField):
                 yield f.enum
     elif isinstance(o, UnionDescr):
         yield from o.structs
 
 
-def validate_duplicates(start_objs: Iterable[Union[StructDescr, UnionDescr]]):
+def validate_duplicates(start_objs: Iterable[DescrObjType]):
     objs_by_name = {}
     objs_stack = list(start_objs)
     while objs_stack:
@@ -68,7 +68,7 @@ def validate_duplicates(start_objs: Iterable[Union[StructDescr, UnionDescr]]):
         objs_stack.extend(get_children(o))
 
 
-def count_entries(start_objs: Iterable[Union[StructDescr, UnionDescr]]):
+def count_entries(start_objs: Iterable[DescrObjType]):
     visited = set()
     entries_count = defaultdict(int)
     objs_stack = list(start_objs)
@@ -86,7 +86,7 @@ def count_entries(start_objs: Iterable[Union[StructDescr, UnionDescr]]):
 
 
 def order_descrs(
-    start_objs: Iterable[Union[StructDescr, UnionDescr]],
+    start_objs: Iterable[DescrObjType],
     entries_count: Dict[str, int]
 ):
     order = []
@@ -109,7 +109,7 @@ def order_descrs(
 
 
 def render_proto(
-    head_descrs: Iterable[Union[StructDescr, UnionDescr]],
+    head_descrs: Iterable[DescrObjType],
     out_prefix: str
 ):
     out_dir = path.dirname(out_prefix)
@@ -136,12 +136,11 @@ def render_proto(
                 pyx_out.put(render_pyx.render_ctypedef_struct(o))
             elif isinstance(o, UnionField):
                 h_out.put(render_cc.render_union_enum(o))
-                h_out.put(render_cc.render_union(o))
+                h_out.put(render_cc.render_union(o.union))
                 # h_out.put(render_cc.render_parse_union(o))
-                py_out.put(render_cc.render_union_enum(o))
-                py_out.put(render_py.render_union_class(o))
+                py_out.put(render_py.render_union_class(o.union))
                 pyx_out.put(render_pyx.render_union_enum(o))
-                pyx_out.put(render_pyx.render_union(o))
+                pyx_out.put(render_pyx.render_union(o.union))
             elif isinstance(o, Enum):
                 h_out.put(render_cc.render_enum(o))
                 py_out.put(render_py.render_enum(o))

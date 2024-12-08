@@ -104,12 +104,12 @@ def render_union(union: UnionDescr):
 def render_union_enum(union: UnionField):
     yield f"typedef enum {union.name}_type {{"
     yield IdentStart
-    if union.allow_empty:
+    if union.union.allow_empty:
         yield f"{union.name}_empty = 0,"
         n = 1
     else:
         n = 0
-    for struct in union.structs:
+    for struct in union.union.structs:
         yield f"{struct.name} = {n},"
         n += 1
     yield IdentEnd
