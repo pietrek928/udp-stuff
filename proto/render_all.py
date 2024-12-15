@@ -51,6 +51,8 @@ def get_children(o: DescrObjType):
                 yield f.enum
     elif isinstance(o, UnionDescr):
         yield from o.structs
+    elif isinstance(o, UnionField):
+        yield o.union
 
 
 def validate_duplicates(start_objs: Iterable[DescrObjType]):
@@ -135,7 +137,7 @@ def render_proto(
                 py_out.put(render_py.render_struct(o))
                 pyx_out.put(render_pyx.render_ctypedef_struct(o))
             elif isinstance(o, UnionField):
-                h_out.put(render_cc.render_union_enum(o))
+                h_out.put(render_cc.render_union_enum(o.union))
                 h_out.put(render_cc.render_union(o.union))
                 # h_out.put(render_cc.render_parse_union(o))
                 py_out.put(render_py.render_union_class(o.union))

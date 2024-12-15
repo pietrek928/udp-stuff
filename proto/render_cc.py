@@ -71,7 +71,7 @@ def render_struct(struct: StructDescr):
         if field.description:
             yield f"/* {field.description} */"
         if isinstance(field, UnionField):
-            yield f"{field.union.name}_type {field.name}_type;"
+            yield f"{field.union.name}_enum_class {field.name}_type;"
         yield f"{get_type_name(field)} {field.name};"
     yield IdentEnd
     yield f"}} {struct.name};"
@@ -81,7 +81,7 @@ def render_enum(enum: Enum):
     description = getdoc(enum)
     if description:
         yield f'/* {description} */'
-    yield "typedef enum {"
+    yield f"enum class {enum.__name__} {{"
     yield IdentStart
     for name, value in get_enum_int_mapping(enum):
         description = getdoc(enum.__members__[name])
@@ -89,7 +89,7 @@ def render_enum(enum: Enum):
             f" /* {description} */" if description else ""
         )
     yield IdentEnd
-    yield f"}} {enum.__name__};"
+    yield f"}};"
 
 
 def render_union(union: UnionDescr):
@@ -101,19 +101,19 @@ def render_union(union: UnionDescr):
     yield f"}} {union.name};"
 
 
-def render_union_enum(union: UnionField):
-    yield f"typedef enum {union.name}_type {{"
+def render_union_enum(union: UnionDescr):
+    yield f"enum class {union.name}_enum_class {{"
     yield IdentStart
-    if union.union.allow_empty:
+    if union.allow_empty:
         yield f"{union.name}_empty = 0,"
         n = 1
     else:
         n = 0
-    for struct in union.union.structs:
+    for struct in union.structs:
         yield f"{struct.name} = {n},"
         n += 1
     yield IdentEnd
-    yield f"}} {union.name}_type;"
+    yield f"}};"
 
 
 #
@@ -149,42 +149,36 @@ def render_parse_struct_field(struct: StructField, reader, result):
         yield f"auto struct_reader = reader.read_fragment(length);"
         yield f"try {{"
         yield IdentStart
-        yield f"parse_{struct.struct.name}(struct_reader, {result}.{struct.name});"
+        yield f"parse_{struct.struct.name}(struct_reader, {result});"
         yield IdentEnd
         yield f"}} catch (BitStreamFinished &e) {{"
         yield f"}}"
         yield IdentEnd
         yield "}"
     else:
-        yield f"parse_{struct.struct.name}(reader, {result}.{struct.name});"
+        yield f"parse_{struct.struct.name}(reader, {result});"
 
 
-def render_parse_union_field(union: UnionField, reader, result):
-    type_type = get_type_name(union.type_field)
-    yield "{"
-    yield IdentStart
-    yield f"{type_type} type;"
-    yield f"{reader}.read_uint({union.type_field.bits}, &type);"
+def render_parse_union_field(union: UnionField, reader, result, type_var):
+    yield f"{reader}.read_uint({union.type_field.bits}, &{type_var});"
     if union.length is not None:
         length_type = get_type_name(union.length)
         if union.union.allow_empty:
-            yield f"if (type != 0) {{"
+            yield f"if ({type_var} != {union.union.name}_empty) {{"
             yield IdentStart
         yield f"{length_type} length;"
         yield f"{reader}.read_uint({union.length.bits}, &length);"
         yield f"auto struct_reader = reader.read_fragment(length);"
         yield f"try {{"
         yield IdentStart
-        yield f"switch (type) {{"
+        yield f"switch ({type_var}) {{"
         yield IdentStart
-        n = 1
         for struct in union.union.structs:
-            yield f"case {n}:"
+            yield f"case {union.union.name}_enum_class::{struct.name}: {{"
             yield IdentStart
             yield f"parse_{struct.name}(struct_reader, {result}.{struct.name}_variant);"
-            yield f"break;"
+            yield "} break;"
             yield IdentEnd
-            n += 1
         yield "default:"
         yield IdentStart
         yield "throw std::runtime_error(\"Unknown union type\");"
@@ -197,30 +191,25 @@ def render_parse_union_field(union: UnionField, reader, result):
             yield IdentEnd
             yield "}"
     else:
-        n = 0
-        yield f"switch (type) {{"
+        yield f"switch ({type_var}) {{"
         yield IdentStart
         if union.union.allow_empty:
-            yield f"case {n}:"
+            yield f"case {union.union.name}_empty:"
             yield IdentStart
             yield f"break;"
             yield IdentEnd
-            n += 1
         for struct in union.union.structs:
-            yield f"case {n}: {{"
+            yield f"case {union.union.name}_enum_class::{struct.name}: {{"
             yield IdentStart
             yield f"parse_{struct.name}(reader, {result}.{struct.name}_variant);"
-            yield "break;"
+            yield "} break;"
             yield IdentEnd
-            n += 1
         yield "default:"
         yield IdentStart
         yield "throw std::runtime_error(\"Unknown union type\");"
         yield IdentEnd
         yield IdentEnd
         yield "}"
-    yield IdentEnd
-    yield "}"
 
 
 def render_parse_field(field: FieldDescr, reader, result):
@@ -245,7 +234,7 @@ def render_parse_field(field: FieldDescr, reader, result):
     elif isinstance(field, StructField):
         yield from render_parse_struct_field(field, reader, result)
     elif isinstance(field, UnionField):
-        yield from render_parse_union_field(field, reader, result)
+        yield from render_parse_union_field(field, reader, result, f"{result}_type")
     else:
         raise ValueError(f"Unsupported field type: {field}")
 
@@ -377,3 +366,4 @@ def render_header_begin():
     yield "#include <cstdint>"
     yield "#include <string>"
     yield "#include <vector>"
+    yield "#include <stdexcept>"
