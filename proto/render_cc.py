@@ -2,7 +2,7 @@ from enum import Enum
 from inspect import getdoc
 from .descr import (
     ArrayField, BoolField, EnumField, FieldDescr,
-    FloatField, IdentEnd, IdentStart, IntField, StringField, StructDescr,
+    FloatField, IdentEnd, IdentStart, Sep, IntField, StringField, StructDescr,
     StructField, UintField, UnionDescr, UnionField, get_enum_int_mapping
 )
 
@@ -75,6 +75,7 @@ def render_struct(struct: StructDescr):
         yield f"{get_type_name(field)} {field.name};"
     yield IdentEnd
     yield f"}} {struct.name};"
+    yield Sep
 
 
 def render_enum(enum: Enum):
@@ -90,6 +91,7 @@ def render_enum(enum: Enum):
         )
     yield IdentEnd
     yield f"}};"
+    yield Sep
 
 
 def render_union(union: UnionDescr):
@@ -99,6 +101,7 @@ def render_union(union: UnionDescr):
         yield f"{struct.name} {struct.name}_variant;"
     yield IdentEnd
     yield f"}} {union.name};"
+    yield Sep
 
 
 def render_union_enum(union: UnionDescr):
@@ -114,6 +117,7 @@ def render_union_enum(union: UnionDescr):
         n += 1
     yield IdentEnd
     yield f"}};"
+    yield Sep
 
 
 #
@@ -251,6 +255,7 @@ def render_parse_struct(struct: StructDescr):
         yield from render_parse_field(field, "reader", f"result.{field.name}")
     yield IdentEnd
     yield "}"
+    yield Sep
 
 
 #
@@ -358,12 +363,14 @@ def render_write_struct(struct: StructDescr):
         yield from render_write_field(field, "writer", f"value.{field.name}")
     yield IdentEnd
     yield "}"
+    yield Sep
 
 
 def render_header_begin():
     yield "#pragma once"
-    yield ""
+    yield Sep
     yield "#include <cstdint>"
     yield "#include <string>"
     yield "#include <vector>"
     yield "#include <stdexcept>"
+    yield Sep

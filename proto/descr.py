@@ -3,8 +3,11 @@ from math import ceil, log2
 from typing import Any, Optional, Tuple, Type
 from pydantic import BaseModel
 
+
 IdentStart = object()
 IdentEnd = object()
+Sep = object()
+
 
 class FieldDescr(BaseModel):
     name: str

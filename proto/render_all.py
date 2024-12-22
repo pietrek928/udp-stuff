@@ -3,7 +3,7 @@ from enum import Enum
 from os import makedirs, path
 from typing import Dict, Iterable, Union
 
-from .descr import ArrayField, EnumField, IdentEnd, IdentStart, StructDescr, StructField, UnionDescr, UnionField
+from .descr import ArrayField, EnumField, IdentEnd, IdentStart, Sep, StructDescr, StructField, UnionDescr, UnionField
 from . import render_cc, render_py, render_pyx
 
 class FileOutput:
@@ -25,6 +25,8 @@ class FileOutput:
                 self.ident += 1
             elif item is IdentEnd:
                 self.ident -= 1
+            elif item is Sep:
+                self.f.write('\n\n')
             else:
                 idents = '    ' * self.ident
                 self.f.write(f'{idents}{item}\n')
@@ -129,6 +131,7 @@ def render_proto(
     ):
         h_out.put(render_cc.render_header_begin())
         py_out.put(render_py.render_imports())
+        pyx_out.put(render_pyx.render_imports())
 
         for o in ordered_objs:
             if isinstance(o, StructDescr):
@@ -141,7 +144,7 @@ def render_proto(
                 h_out.put(render_cc.render_union(o.union))
                 # h_out.put(render_cc.render_parse_union(o))
                 py_out.put(render_py.render_union_class(o.union))
-                pyx_out.put(render_pyx.render_union_enum(o))
+                pyx_out.put(render_pyx.render_union_enum(o.union))
                 pyx_out.put(render_pyx.render_union(o.union))
             elif isinstance(o, Enum):
                 h_out.put(render_cc.render_enum(o))
