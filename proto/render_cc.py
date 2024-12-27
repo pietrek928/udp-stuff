@@ -265,7 +265,13 @@ def render_parse_struct(struct: StructDescr):
 def render_write_array(array: ArrayField, writer, value):
     yield "{"
     yield IdentStart
-    yield f"{writer}.write_uint({array.size.bits}, {value}.size());"
+    if array.const_size is None:
+        yield f"{writer}.write_uint({array.size.bits}, {value}.size());"
+    else:
+        yield (
+            f"if ({value}.size() != {array.const_size}) "
+            f"throw std::invalid_argument(\"Array size must be {array.const_size}\");"
+        )
     yield f"for (const auto &vec_item : {value}) {{"
     yield IdentStart
     yield from render_write_field(array.item, writer, "vec_item")
@@ -281,29 +287,29 @@ def render_write_struct_field(struct: StructField, writer, value):
         yield IdentStart
         yield f"{writer}.write_uint({struct.length.bits}, 0);"
         yield f"auto struct_pos = {writer}.get_bit_pos();"
-        yield f"write_{struct.struct.name}(writer, {value}.{struct.name});"
+        yield f"write_{struct.struct.name}(writer, {value});"
         yield f"auto length = {writer}.get_bit_pos() - struct_pos;"
         yield f"{writer}.write_uint_at(struct_pos - {struct.length.bits}, {struct.length.bits}, length);"
         yield IdentEnd
         yield "}"
     else:
-        yield f"write_{struct.struct.name}(writer, {value}.{struct.name});"
+        yield f"write_{struct.struct.name}(writer, {value});"
 
 
-def render_write_union_field(union: UnionField, writer, value):
+def render_write_union_field(union: UnionField, writer, value, type_var):
     yield "{"
     yield IdentStart
-    yield f"{writer}.write_uint({union.type_field.bits}, {value}_type);"
+    yield f"{writer}.write_uint({union.type_field.bits}, {type_var});"
     if union.union.allow_empty:
-        yield f"if ({value}_type != 0) {{"
+        yield f"if ({type_var} != {union.union.name}_empty) {{"
         yield IdentStart
     if union.length is not None:
         yield f"{writer}.write_uint({union.length.bits}, 0);"
         yield f"auto struct_pos = {writer}.get_bit_pos();"
-    yield f"switch ({value}.{union.type_field.name}) {{"
+    yield f"switch ({type_var}) {{"
     yield IdentStart
-    for n, struct in enumerate(union.structs):
-        yield f"case {n}:"
+    for n, struct in enumerate(union.union.structs):
+        yield f"case {union.union.name}_enum_class::{struct.name}:"
         yield IdentStart
         yield f"write_{struct.name}(writer, {value}.{struct.name}_variant);"
         yield f"break;"
@@ -326,7 +332,7 @@ def render_write_union_field(union: UnionField, writer, value):
 
 def render_write_field(field: FieldDescr, writer, value):
     if field.default is not None:
-        yield f"if ({value} != {field.default}) {{"
+        yield f"if ({field.check_default(value)}) {{"
         yield IdentStart
 
     if isinstance(field, EnumField):
@@ -346,7 +352,7 @@ def render_write_field(field: FieldDescr, writer, value):
     elif isinstance(field, StructField):
         yield from render_write_struct_field(field, writer, value)
     elif isinstance(field, UnionField):
-        yield from render_write_union_field(field, writer, value)
+        yield from render_write_union_field(field, writer, value, f"{value}_type")
     else:
         raise ValueError(f"Unsupported field type: {field}")
 

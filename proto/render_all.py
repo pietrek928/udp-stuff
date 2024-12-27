@@ -137,6 +137,7 @@ def render_proto(
             if isinstance(o, StructDescr):
                 h_out.put(render_cc.render_struct(o))
                 h_out.put(render_cc.render_parse_struct(o))
+                h_out.put(render_cc.render_write_struct(o))
                 py_out.put(render_py.render_struct(o))
                 pyx_out.put(render_pyx.render_ctypedef_struct(o))
             elif isinstance(o, UnionField):

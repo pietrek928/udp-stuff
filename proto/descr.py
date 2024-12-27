@@ -14,6 +14,9 @@ class FieldDescr(BaseModel):
     description: Optional[str] = None
     default: Optional[Any] = None
 
+    def check_default(self, value):
+        return f"{value} != {self.default}"
+
 
 class BoolField(FieldDescr):
     pass
@@ -38,6 +41,12 @@ class StringField(FieldDescr):
         if 'size' not in kwargs:
             kwargs['size'] = UintField(name="size", bits=size_bits)
         super().__init__(**kwargs)
+
+    def check_default(self, value):
+        if len(self.default):
+            return f"{value} != \"{self.default}\""
+        else:
+            return f"{value}.size() > 0"
 
 
 class EnumField(UintField):
@@ -71,6 +80,12 @@ class ArrayField(FieldDescr):
             kwargs['size'] = UintField(name="size", bits=size_bits)
         super().__init__(const_size=const_size, **kwargs)
         assert self.size is not None or self.const_size is not None
+
+    def check_default(self, value):
+        if len(self.default):
+            return super().check_default(value)
+        else:
+            return f"{value}.size() > 0"
 
 
 class StructDescr(BaseModel):
